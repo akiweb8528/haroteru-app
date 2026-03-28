@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import { getServerSession } from 'next-auth';
+import Script from 'next/script';
 import { authOptions } from '@/lib/auth';
 import { SessionProvider } from '@/providers/SessionProvider';
 import { PreferencesProvider } from '@/providers/PreferencesProvider';
@@ -9,6 +10,7 @@ import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
 const siteUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3000';
+const googleAnalyticsId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim();
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -52,6 +54,22 @@ export default async function RootLayout({ children }: { children: React.ReactNo
             __html: `try{if(localStorage.getItem('theme')==='dark')document.documentElement.classList.add('dark')}catch(e){}`,
           }}
         />
+        {googleAnalyticsId && (
+          <>
+            <Script
+              src={`https://www.googletagmanager.com/gtag/js?id=${googleAnalyticsId}`}
+              strategy="afterInteractive"
+            />
+            <Script id="google-analytics" strategy="afterInteractive">
+              {`
+                window.dataLayer = window.dataLayer || [];
+                function gtag(){dataLayer.push(arguments);}
+                gtag('js', new Date());
+                gtag('config', '${googleAnalyticsId}');
+              `}
+            </Script>
+          </>
+        )}
       </head>
       <body className={`${inter.className} h-full bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100`}>
         <SessionProvider session={session}>
