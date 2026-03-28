@@ -213,7 +213,7 @@ export function SubscriptionCard({
           {subscription.billingDay && <span className="rounded-full bg-gray-100 px-2.5 py-1 text-gray-700 dark:bg-gray-800 dark:text-gray-300">毎月 {subscription.billingDay} 日前後</span>}
         </div>
 
-        {subscription.note && <p className="mt-4 text-sm leading-6 text-gray-600 dark:text-gray-300">{subscription.note}</p>}
+        {subscription.note && <p className="mt-4 whitespace-pre-wrap break-all text-sm leading-6 text-gray-600 dark:text-gray-300">{subscription.note}</p>}
       </div>
 
       {showConfirm && (
