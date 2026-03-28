@@ -48,7 +48,7 @@ function DeleteSubscriptionDialog({
             削除の確認
           </h2>
         </div>
-        <p className="mt-3 text-sm text-gray-600 dark:text-gray-300">
+        <p className="mt-3 break-all text-sm text-gray-600 dark:text-gray-300">
           <span className="font-medium text-gray-900 dark:text-gray-100">「{subscriptionName}」</span>{message}
         </p>
         <div className="mt-5 flex justify-end gap-2">
