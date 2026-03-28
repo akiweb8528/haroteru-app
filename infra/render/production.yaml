@@ -1,0 +1,56 @@
+services:
+  - type: web
+    name: haroteru-backend
+    runtime: go
+    plan: free
+    rootDir: backend
+    autoDeployTrigger: commit
+    buildCommand: go build -o bin/server ./cmd/server
+    startCommand: ./bin/server
+    healthCheckPath: /health/ready
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: PUBLIC_API_URL
+        sync: false
+      - key: FRONTEND_URL
+        fromService:
+          type: web
+          name: haroteru-frontend
+          envVarKey: NEXTAUTH_URL
+
+  - type: web
+    name: haroteru-frontend
+    runtime: node
+    plan: free
+    rootDir: frontend
+    autoDeployTrigger: commit
+    buildCommand: npm ci && npm run build
+    startCommand: npm run start
+    envVars:
+      - key: NEXTAUTH_URL
+        sync: false
+      - key: NEXTAUTH_SECRET
+        generateValue: true
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: haroteru-backend
+          envVarKey: PUBLIC_API_URL
+      - key: BACKEND_URL
+        fromService:
+          type: web
+          name: haroteru-backend
+          property: hostport

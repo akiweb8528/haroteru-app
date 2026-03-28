@@ -101,7 +101,12 @@ docker compose up
 
 バックエンドでは Neon ホストの URL に `sslmode` が未指定でも `sslmode=require` を補うため、そのまま接続できます。
 
-Render 用の Blueprint は repo ルートの `render.yaml` にあります。staging 用に frontend / backend の 2 サービスを作る前提です。
+Render 用の Blueprint は `infra/render/` 配下で管理しています。
+
+- staging: `infra/render/staging.yaml`
+- production: `infra/render/production.yaml`
+
+Blueprint 作成時は Render の `Blueprint Path` で対象ファイルを指定してください。
 
 初回作成時に Render で入力する値:
 
@@ -126,6 +131,8 @@ Google OAuth の設定では、以下の callback / origin を追加してくだ
 
 - Authorized JavaScript origins: frontend の公開 URL
 - Authorized redirect URIs: `https://<frontend-domain>/api/auth/callback/google`
+
+production 用 Blueprint を作る場合は、同様に `infra/render/production.yaml` を指定し、`haroteru-backend` / `haroteru-frontend` 向けの公開 URL と OAuth 設定を用意してください。
 
 ## フロントエディタエラー解消
 
