@@ -1,8 +1,8 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { signIn } from 'next-auth/react';
-import { formatCurrency } from '@/lib/utils';
+import { cn, formatCurrency } from '@/lib/utils';
 import type { SubscriptionListParams } from '@/features/subscriptions/api/subscription-client';
 import { SubscriptionFilters } from '@/features/subscriptions/components/SubscriptionFilters';
 import { SubscriptionForm } from '@/features/subscriptions/components/SubscriptionForm';
@@ -31,28 +31,35 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
   const [showApprox, setShowApprox] = useState(true);
   const [filters, setFilters] = useState<SubscriptionListParams>({ sort: 'position', order: 'asc' });
   const { taste } = usePreferences();
+  const formRef = useRef<HTMLDivElement | null>(null);
 
   const serverHook = useSubscriptions(isGuest ? null : filters);
   const localHook = useLocalSubscriptions(filters);
   const { subscriptions, meta, isLoading, error, create, update, remove, reorder } = isGuest ? localHook : serverHook;
   const summary = meta?.summary;
+  const hasSubscriptions = subscriptions.length > 0;
   const canReorder = (filters.sort ?? 'position') === 'position' && (filters.order ?? 'asc') === 'asc';
   const dashboardCopy = isGuest || taste === 'ossan'
     ? {
-        eyebrow: '登録なしですぐ使えるで、サブスクのダッシュボード',
+        eyebrow: isGuest ? '登録なしですぐ使えるで、サブスクのダッシュボード' : 'すぐ使えるサブスクのダッシュボードやで',
         title: '今なんぼ払ろてるか、すぐ分かるで。',
         description: '必要なサブスクも、なんとなく続いとるサブスクも、まとめて見える化やで。ロックして残すもんと、見直し候補を同じ一覧で管理できるんや。',
       }
     : {
-        eyebrow: 'すぐ使えるサブスク管理',
-        title: 'サブスクの支出をすぐ確認できます。',
-        description: '契約中のサービスを一覧で整理し、残すものと見直すものをまとめて管理できます。',
+        eyebrow: '',
+        title: 'ダッシュボード',
+        description: '',
       };
   const guestSyncCopy = taste === 'simple'
     ? '現在のデータはこの端末に保存されています。Googleで同期すると、別の端末でも同じ一覧を利用できます。'
     : '今のデータはこの端末だけに入っとるで。Googleで同期したら、別の端末でも同じ一覧が見られるんや。';
 
   const fmtAmount = (n: number) => showApprox ? formatApprox(n) : formatCurrency(n);
+
+  useEffect(() => {
+    if (!showForm) return;
+    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }, [showForm]);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
@@ -95,7 +102,13 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
       <div className="mb-4"><SubscriptionFilters filters={filters} onChange={setFilters} /></div>
 
       {showForm && (
-        <div className="mb-4">
+        <div
+          ref={formRef}
+          className={cn(
+            'mb-4',
+            !hasSubscriptions && 'pb-[45vh]',
+          )}
+        >
           <SubscriptionForm onSubmit={async (input) => { await create(input); setShowForm(false); }} onCancel={() => setShowForm(false)} />
         </div>
       )}

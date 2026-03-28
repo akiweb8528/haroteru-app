@@ -4,6 +4,7 @@ import { useState } from 'react';
 import type { TrackedSubscription, UpdateTrackedSubscriptionInput } from '@/types';
 import { billingCycleLabels, categoryLabels, formatCurrency, reviewPriorityColors, reviewPriorityLabels, cn } from '@/lib/utils';
 import { SubscriptionForm } from '@/features/subscriptions/components/SubscriptionForm';
+import { usePreferences } from '@/providers/PreferencesProvider';
 
 interface Props {
   subscription: TrackedSubscription;
@@ -20,6 +21,7 @@ interface Props {
 
 interface DeleteSubscriptionDialogProps {
   subscriptionName: string;
+  message: string;
   isDeleting: boolean;
   onCancel: () => void;
   onConfirm: () => Promise<void>;
@@ -27,6 +29,7 @@ interface DeleteSubscriptionDialogProps {
 
 function DeleteSubscriptionDialog({
   subscriptionName,
+  message,
   isDeleting,
   onCancel,
   onConfirm,
@@ -46,7 +49,7 @@ function DeleteSubscriptionDialog({
           </h2>
         </div>
         <p className="mt-3 text-sm text-gray-600 dark:text-gray-300">
-          <span className="font-medium text-gray-900 dark:text-gray-100">「{subscriptionName}」</span> を消すで。これ、取り消せへんからな。
+          <span className="font-medium text-gray-900 dark:text-gray-100">「{subscriptionName}」</span>{message}
         </p>
         <div className="mt-5 flex justify-end gap-2">
           <button
@@ -81,6 +84,7 @@ export function SubscriptionCard({
   onDragOver,
   onDrop,
 }: Props) {
+  const { taste } = usePreferences();
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isTogglingLock, setIsTogglingLock] = useState(false);
@@ -215,6 +219,7 @@ export function SubscriptionCard({
       {showConfirm && (
         <DeleteSubscriptionDialog
           subscriptionName={subscription.name}
+          message={taste === 'simple' ? '削除します。この操作は取り消せません。' : 'を消すで。これ、取り消せへんからな。'}
           isDeleting={isDeleting}
           onCancel={() => setShowConfirm(false)}
           onConfirm={handleDelete}

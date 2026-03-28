@@ -29,7 +29,7 @@ export function SettingsView() {
         themeDescription: 'アプリの見た目を選んでや。',
         lightThemeDescription: '明るい感じ',
         darkThemeDescription: '暗い感じ',
-        tasteDescription: 'サブスク画面の説明文の雰囲気を選べるで。',
+        tasteDescription: 'サブスク画面や説明文の雰囲気を選べるで。',
         deleteDescription: 'アカウントを消したら、同期済みのサブスク情報と設定が全部なくなるで。ほんまに消えるからな。',
         deleteConfirmDescription: '念のため、メールアドレス',
         deleteError: 'アカウントを消せへんかった。ちょい待ってからもういっぺん試してや。',
@@ -85,6 +85,35 @@ export function SettingsView() {
               <p className="text-sm text-gray-500 dark:text-gray-400">{user?.email}</p>
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="mb-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <h2 className="mb-1 text-lg font-semibold text-gray-900 dark:text-gray-100">説明テイスト</h2>
+        <p className="mb-5 text-sm text-gray-500 dark:text-gray-400">{copy.tasteDescription}</p>
+
+        <div className="flex gap-4">
+          {(['ossan', 'simple'] as const).map((value) => (
+            <button
+              key={value}
+              onClick={() => setTaste(value)}
+              className={cn(
+                'flex flex-1 flex-col items-start gap-3 rounded-xl border-2 p-4 text-left transition',
+                taste === value
+                  ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20'
+                  : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600',
+              )}
+            >
+              <div>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{tasteLabels[value]}</p>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  {value === 'ossan'
+                    ? '説明多めの関西のおっさん口調で案内するで'
+                    : '必要最低限の説明だけを一般的な口調で表示する'}
+                </p>
+              </div>
+            </button>
+          ))}
         </div>
       </section>
 
@@ -157,35 +186,6 @@ export function SettingsView() {
               <div className="text-center">
                 <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{value === 'light' ? 'ライト' : 'ダーク'}</p>
                 <p className="text-xs text-gray-500 dark:text-gray-400">{value === 'light' ? copy.lightThemeDescription : copy.darkThemeDescription}</p>
-              </div>
-            </button>
-          ))}
-        </div>
-      </section>
-
-      <section className="mb-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
-        <h2 className="mb-1 text-lg font-semibold text-gray-900 dark:text-gray-100">説明テイスト</h2>
-        <p className="mb-5 text-sm text-gray-500 dark:text-gray-400">{copy.tasteDescription}</p>
-
-        <div className="flex gap-4">
-          {(['ossan', 'simple'] as const).map((value) => (
-            <button
-              key={value}
-              onClick={() => setTaste(value)}
-              className={cn(
-                'flex flex-1 flex-col items-start gap-3 rounded-xl border-2 p-4 text-left transition',
-                taste === value
-                  ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20'
-                  : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600',
-              )}
-            >
-              <div>
-                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{tasteLabels[value]}</p>
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  {value === 'ossan'
-                    ? '説明多めの関西のおっさん口調で案内するで'
-                    : '必要最低限の説明だけを一般的な口調で表示する'}
-                </p>
               </div>
             </button>
           ))}
