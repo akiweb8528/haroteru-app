@@ -9,24 +9,11 @@ import type {
   DashboardSummary,
 } from '@/types';
 import type { SubscriptionListParams } from '@/features/subscriptions/api/subscription-client';
+import {
+  readLocalSubscriptions,
+  writeLocalSubscriptions,
+} from '@/features/subscriptions/lib/local-storage';
 import { reorderSubscriptionsWithHiddenItems } from '@/features/subscriptions/lib/reorder';
-
-const STORAGE_KEY = 'local_subscriptions';
-
-function loadFromStorage(): TrackedSubscription[] {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? (JSON.parse(raw) as TrackedSubscription[]) : [];
-  } catch {
-    return [];
-  }
-}
-
-function saveToStorage(items: TrackedSubscription[]): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-  } catch {}
-}
 
 function buildSummary(items: TrackedSubscription[]): DashboardSummary {
   const monthlyEstimate = items.reduce((sum, item) => sum + (item.billingCycle === 'yearly' ? Math.round(item.amountYen / 12) : item.amountYen), 0);
@@ -85,13 +72,13 @@ export function useLocalSubscriptions(params: SubscriptionListParams = {}) {
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    setAllSubscriptions(loadFromStorage());
+    setAllSubscriptions(readLocalSubscriptions());
     setIsLoading(false);
   }, []);
 
   const create = useCallback(async (input: CreateTrackedSubscriptionInput): Promise<TrackedSubscription> => {
     const now = new Date().toISOString();
-    const current = loadFromStorage();
+    const current = readLocalSubscriptions();
     const maxPos = current.reduce((m, item) => Math.max(m, item.position), -1);
     const item: TrackedSubscription = {
       id: crypto.randomUUID(),
@@ -109,13 +96,13 @@ export function useLocalSubscriptions(params: SubscriptionListParams = {}) {
       updatedAt: now,
     };
     const next = [...current, item];
-    saveToStorage(next);
+    writeLocalSubscriptions(next);
     setAllSubscriptions(next);
     return item;
   }, []);
 
   const update = useCallback(async (id: string, input: UpdateTrackedSubscriptionInput): Promise<TrackedSubscription> => {
-    const current = loadFromStorage();
+    const current = readLocalSubscriptions();
     let updated!: TrackedSubscription;
     const next = current.map((item) => {
       if (item.id !== id) return item;
@@ -128,22 +115,22 @@ export function useLocalSubscriptions(params: SubscriptionListParams = {}) {
       };
       return updated;
     });
-    saveToStorage(next);
+    writeLocalSubscriptions(next);
     setAllSubscriptions(next);
     return updated;
   }, []);
 
   const remove = useCallback(async (id: string): Promise<void> => {
-    const next = loadFromStorage().filter((item) => item.id !== id);
-    saveToStorage(next);
+    const next = readLocalSubscriptions().filter((item) => item.id !== id);
+    writeLocalSubscriptions(next);
     setAllSubscriptions(next);
   }, []);
 
   const reorder = useCallback(async (draggedId: string, targetId: string): Promise<void> => {
-    const current = loadFromStorage();
+    const current = readLocalSubscriptions();
     const visible = applyFilters(current, params);
     const next = reorderSubscriptionsWithHiddenItems(current, visible, draggedId, targetId);
-    saveToStorage(next);
+    writeLocalSubscriptions(next);
     setAllSubscriptions(next);
   }, [params]);
 
