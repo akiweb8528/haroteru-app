@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import useSWR, { mutate as globalMutate } from 'swr';
 import { userApi } from '@/features/account/api/user-client';
@@ -33,6 +33,7 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
   const [useGoogleAvatar, setUseGoogleAvatarState] = useState(true);
   const [taste, setTasteState] = useState<CopyTaste>('ossan');
   const [localInitialized, setLocalInitialized] = useState(false);
+  const pendingThemeRef = useRef<Theme | null>(null);
 
   // Fetch from API when authenticated (shares cache with useMe hook via same key)
   const { data: me } = useSWR(
@@ -63,6 +64,10 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
     if (!me || !localInitialized) return;
 
     const serverTheme: Theme = me.theme === 'dark' ? 'dark' : 'light';
+    if (pendingThemeRef.current && serverTheme !== pendingThemeRef.current) {
+      return;
+    }
+    pendingThemeRef.current = null;
     setThemeState(serverTheme);
     applyThemeToDom(serverTheme);
 
@@ -73,9 +78,15 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
   }, [me, localInitialized]);
 
   async function setTheme(t: Theme) {
+    pendingThemeRef.current = t;
     setThemeState(t);
     applyThemeToDom(t);
     if (session?.backendAccessToken) {
+      await globalMutate(
+        ME_KEY,
+        (current) => (current ? { ...current, theme: t } : current),
+        false,
+      );
       const updated = await userApi.updatePreferences({ theme: t });
       await globalMutate(ME_KEY, updated, false);
     }
@@ -101,6 +112,7 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
 
   // Used on sign-out: resets local state/DOM without calling API
   function resetPreferences() {
+    pendingThemeRef.current = null;
     setThemeState('light');
     setUseGoogleAvatarState(true);
     setTasteState('ossan');
