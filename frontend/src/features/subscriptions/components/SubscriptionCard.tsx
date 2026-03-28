@@ -65,6 +65,7 @@ function DeleteSubscriptionDialog({
 export function SubscriptionCard({ subscription, onUpdate, onDelete }: Props) {
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [isTogglingLock, setIsTogglingLock] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
   const handleDelete = async () => {
@@ -75,6 +76,16 @@ export function SubscriptionCard({ subscription, onUpdate, onDelete }: Props) {
       await onDelete(subscription.id);
     } catch {
       setIsDeleting(false);
+    }
+  };
+
+  const handleToggleLock = async () => {
+    setIsTogglingLock(true);
+
+    try {
+      await onUpdate(subscription.id, { locked: !subscription.locked });
+    } finally {
+      setIsTogglingLock(false);
     }
   };
 
@@ -94,7 +105,12 @@ export function SubscriptionCard({ subscription, onUpdate, onDelete }: Props) {
 
   return (
     <>
-      <div className={cn('rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition dark:border-gray-700 dark:bg-gray-900', isDeleting && 'pointer-events-none opacity-50')}>
+      <div
+        className={cn(
+          'rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition dark:border-gray-700 dark:bg-gray-900',
+          isDeleting && 'pointer-events-none opacity-50',
+        )}
+      >
         <div className="flex items-start justify-between gap-4">
           <div>
             <div className="flex items-center gap-2">
@@ -104,8 +120,31 @@ export function SubscriptionCard({ subscription, onUpdate, onDelete }: Props) {
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{formatCurrency(subscription.amountYen)} / {billingCycleLabels[subscription.billingCycle]}</p>
           </div>
           <div className="flex items-center gap-2">
-            <button onClick={() => setIsEditing(true)} disabled={isDeleting} className="rounded-lg px-3 py-1.5 text-sm text-gray-600 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:text-gray-300 dark:hover:bg-gray-800">編集</button>
-            <button onClick={() => setShowConfirm(true)} disabled={isDeleting} className="rounded-lg px-3 py-1.5 text-sm text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/20">削除</button>
+            <button
+              onClick={() => void handleToggleLock()}
+              disabled={isDeleting || isTogglingLock}
+              aria-pressed={subscription.locked}
+              aria-label={subscription.locked ? 'ロックを解除' : 'ロックする'}
+              title={subscription.locked ? 'ロックを解除' : 'ロックする'}
+              className={cn(
+                'rounded-lg p-2 transition disabled:cursor-not-allowed disabled:opacity-50',
+                subscription.locked
+                  ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:hover:bg-emerald-900/50'
+                  : 'text-gray-500 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800',
+              )}
+            >
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" aria-hidden="true">
+                {subscription.locked ? (
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 0h10.5A2.25 2.25 0 0 1 19.5 12.75v6A2.25 2.25 0 0 1 17.25 21h-10.5A2.25 2.25 0 0 1 4.5 18.75v-6A2.25 2.25 0 0 1 6.75 10.5Z" />
+                ) : (
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 10.5V6.75a3.75 3.75 0 1 1 7.5 0m-9 3.75h10.5A2.25 2.25 0 0 1 19.5 12.75v6A2.25 2.25 0 0 1 17.25 21h-10.5A2.25 2.25 0 0 1 4.5 18.75v-6A2.25 2.25 0 0 1 6.75 10.5Z" />
+                )}
+              </svg>
+            </button>
+            <button onClick={() => setIsEditing(true)} disabled={isDeleting || isTogglingLock} className="rounded-lg px-3 py-1.5 text-sm text-gray-600 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:text-gray-300 dark:hover:bg-gray-800">編集</button>
+            {!subscription.locked && (
+              <button onClick={() => setShowConfirm(true)} disabled={isDeleting || isTogglingLock} className="rounded-lg px-3 py-1.5 text-sm text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/20">削除</button>
+            )}
           </div>
         </div>
 
