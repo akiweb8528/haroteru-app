@@ -8,6 +8,12 @@ vi.mock('./SubscriptionForm', () => ({
   SubscriptionForm: () => <div data-testid="subscription-form" />,
 }));
 
+vi.mock('@/providers/PreferencesProvider', () => ({
+  usePreferences: () => ({
+    taste: 'ossan',
+  }),
+}));
+
 const baseSubscription: TrackedSubscription = {
   id: 'sub-1',
   userId: 'user-1',
