@@ -4,6 +4,7 @@ import type { TrackedSubscription } from '@/types';
 
 export const LOCAL_SUBSCRIPTIONS_STORAGE_KEY = 'local_subscriptions';
 export const LOCAL_SUBSCRIPTIONS_UPDATED_EVENT = 'local-subscriptions-updated';
+export const LOCAL_SUBSCRIPTIONS_MIGRATION_REQUESTED_EVENT = 'local-subscriptions-migration-requested';
 
 function notifyLocalSubscriptionsUpdated() {
   window.dispatchEvent(new Event(LOCAL_SUBSCRIPTIONS_UPDATED_EVENT));
@@ -34,4 +35,8 @@ export function clearLocalSubscriptions(): void {
 
 export function hasLocalSubscriptions(): boolean {
   return readLocalSubscriptions().length > 0;
+}
+
+export function requestLocalSubscriptionsMigration(): void {
+  window.dispatchEvent(new Event(LOCAL_SUBSCRIPTIONS_MIGRATION_REQUESTED_EVENT));
 }
