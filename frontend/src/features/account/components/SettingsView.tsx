@@ -29,7 +29,7 @@ export function SettingsView() {
       resetPreferences();
       await signOut({ callbackUrl: '/' });
     } catch {
-      setDeleteError('アカウントの削除に失敗しました。時間を空けてもう一度お試しください。');
+      setDeleteError('アカウントを消せへんかった。ちょい待ってからもういっぺん試してや。');
       setIsDeleting(false);
     }
   }
@@ -37,11 +37,11 @@ export function SettingsView() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       <h1 className="mb-2 text-2xl font-bold text-gray-900 dark:text-gray-100">設定</h1>
-      <p className="mb-8 text-gray-500 dark:text-gray-400">同期設定とアプリ表示を管理します。</p>
+      <p className="mb-8 text-gray-500 dark:text-gray-400">同期設定とアプリの見た目を管理するで。</p>
 
       <section className="mb-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <h2 className="mb-1 text-lg font-semibold text-gray-900 dark:text-gray-100">同期アカウント</h2>
-        <p className="mb-5 text-sm text-gray-500 dark:text-gray-400">Googleアカウントにログインすると、登録したサブスクを端末をまたいで保持できます。</p>
+        <p className="mb-5 text-sm text-gray-500 dark:text-gray-400">Googleアカウントでログインしたら、登録したサブスクを端末またいで持ち歩けるんや。</p>
 
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -62,7 +62,7 @@ export function SettingsView() {
 
       <section className="mb-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <h2 className="mb-1 text-lg font-semibold text-gray-900 dark:text-gray-100">アイコン</h2>
-        <p className="mb-5 text-sm text-gray-500 dark:text-gray-400">ナビゲーションバーに表示するアイコンを選択してください。</p>
+        <p className="mb-5 text-sm text-gray-500 dark:text-gray-400">ナビゲーションバーに出るアイコンを選んでや。</p>
 
         <div className="flex gap-4">
           <button
@@ -81,7 +81,7 @@ export function SettingsView() {
             )}
             <div className="text-center">
               <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Googleアイコン</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Googleプロフィール写真を使用</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">Googleのプロフィール写真を使うで</p>
             </div>
           </button>
 
@@ -101,7 +101,7 @@ export function SettingsView() {
             </div>
             <div className="text-center">
               <p className="text-sm font-medium text-gray-900 dark:text-gray-100">匿名アイコン</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">シンプルなシルエットを使用</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">シンプルなシルエットを使うで</p>
             </div>
           </button>
         </div>
@@ -109,7 +109,7 @@ export function SettingsView() {
 
       <section className="mb-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <h2 className="mb-1 text-lg font-semibold text-gray-900 dark:text-gray-100">テーマ</h2>
-        <p className="mb-5 text-sm text-gray-500 dark:text-gray-400">アプリの外観を選択してください。</p>
+        <p className="mb-5 text-sm text-gray-500 dark:text-gray-400">アプリの見た目を選んでや。</p>
 
         <div className="flex gap-4">
           {(['light', 'dark'] as const).map((value) => (
@@ -128,7 +128,7 @@ export function SettingsView() {
               </div>
               <div className="text-center">
                 <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{value === 'light' ? 'ライト' : 'ダーク'}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{value === 'light' ? '明るい表示' : '暗い表示'}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{value === 'light' ? '明るい感じ' : '暗い感じ'}</p>
               </div>
             </button>
           ))}
@@ -137,7 +137,7 @@ export function SettingsView() {
 
       <section className="rounded-2xl border border-red-200 bg-white p-6 shadow-sm dark:border-red-900/50 dark:bg-gray-900">
         <h2 className="mb-1 text-lg font-semibold text-red-600 dark:text-red-400">アカウント削除</h2>
-        <p className="mb-5 text-sm text-gray-500 dark:text-gray-400">アカウントを削除すると、同期済みのサブスク情報と設定が完全に削除されます。</p>
+        <p className="mb-5 text-sm text-gray-500 dark:text-gray-400">アカウントを消したら、同期済みのサブスク情報と設定が全部なくなるで。ほんまに消えるからな。</p>
 
         {!deleteConfirm ? (
           <button
@@ -149,7 +149,7 @@ export function SettingsView() {
         ) : (
           <div className="space-y-4">
             <div className="rounded-xl border border-red-100 bg-red-50 p-4 dark:border-red-900/30 dark:bg-red-900/10">
-              <p className="text-sm font-medium text-red-700 dark:text-red-400">確認のため、メールアドレス <span className="font-bold">{user?.email}</span> を入力してください。</p>
+              <p className="text-sm font-medium text-red-700 dark:text-red-400">念のため、メールアドレス <span className="font-bold">{user?.email}</span> を入力してや。</p>
             </div>
 
             <input

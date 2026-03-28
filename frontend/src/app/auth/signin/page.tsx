@@ -11,12 +11,12 @@ interface Props {
 }
 
 const errorMessages: Record<string, string> = {
-  OAuthSignin: 'Googleサインインを開始できませんでした。もう一度お試しください。',
-  OAuthCallback: 'Googleサインインが中断されました。もう一度お試しください。',
-  OAuthAccountNotLinked: 'このメールアドレスはすでに別のアカウントに紐づいています。',
-  BackendAuthError: 'サーバーへの接続に失敗しました。時間を空けてもう一度お試しください。',
-  SessionExpired: 'セッションが期限切れです。もう一度サインインしてください。',
-  default: 'エラーが発生しました。もう一度お試しください。',
+  OAuthSignin: 'Googleサインインがでけへんかった。もういっぺん試してや。',
+  OAuthCallback: 'Googleサインインが途中で止まってもた。もういっぺん試してや。',
+  OAuthAccountNotLinked: 'そのメアドはもう別のアカウントにくっついとるで。',
+  BackendAuthError: 'サーバーにつながらへんかった。ちょい待ってからもういっぺん試してや。',
+  SessionExpired: 'セッションが切れてもた。もういっぺんサインインしてや。',
+  default: 'えらいこっちゃ、なんかこけた。もういっぺん試してや。',
 };
 
 export default async function SignInPage({ searchParams }: Props) {
@@ -41,7 +41,7 @@ export default async function SignInPage({ searchParams }: Props) {
             同期を有効にする
           </h1>
           <p className="mb-6 text-center text-sm text-gray-500 dark:text-gray-400">
-            サブスク払ろてるをGoogleアカウントに保存します
+            サブスク払ろてるのデータをGoogleアカウントに保存するで
           </p>
 
           {errorMessage && (
