@@ -42,6 +42,7 @@ func Setup(
 	authGroup := v1.Group("/auth")
 	authGroup.Use(authRL.Middleware())
 	authGroup.POST("/google", auth.GoogleSignIn)
+	authGroup.POST("/dev", auth.DevSignIn)
 	authGroup.POST("/refresh", auth.RefreshToken)
 
 	protected := v1.Group("")
