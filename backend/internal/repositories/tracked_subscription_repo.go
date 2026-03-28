@@ -165,7 +165,7 @@ func (r *TrackedSubscriptionRepository) Create(item *models.TrackedSubscription)
 	return nil
 }
 
-func (r *TrackedSubscriptionRepository) Update(item *models.TrackedSubscription, fields map[string]interface{}) error {
+func (r *TrackedSubscriptionRepository) Update(item *models.TrackedSubscription, fields map[string]any) error {
 	if err := r.db.Model(item).Updates(fields).Error; err != nil {
 		return fmt.Errorf("updating tracked subscription: %w", err)
 	}
