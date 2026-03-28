@@ -24,11 +24,11 @@ services:
       - key: FRONTEND_URL
         fromService:
           type: web
-          name: haroteru-frontend
+          name: haroteru
           envVarKey: NEXTAUTH_URL
 
   - type: web
-    name: haroteru-frontend
+    name: haroteru
     runtime: node
     plan: free
     rootDir: frontend

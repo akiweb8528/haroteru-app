@@ -132,7 +132,7 @@ Google OAuth の設定では、以下の callback / origin を追加してくだ
 - Authorized JavaScript origins: frontend の公開 URL
 - Authorized redirect URIs: `https://<frontend-domain>/api/auth/callback/google`
 
-production 用 Blueprint を作る場合は、同様に `infra/render/production.yaml` を指定し、`haroteru-backend` / `haroteru-frontend` 向けの公開 URL と OAuth 設定を用意してください。
+production 用 Blueprint を作る場合は、同様に `infra/render/production.yaml` を指定してください。production の frontend サービス名は `haroteru` なので、公開 URL は `https://haroteru.onrender.com` になります。backend は `haroteru-backend` のままなので、`PUBLIC_API_URL` には `https://haroteru-backend.onrender.com` を設定してください。
 
 ## CI / CD
 
