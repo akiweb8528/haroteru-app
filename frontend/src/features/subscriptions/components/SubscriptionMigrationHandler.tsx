@@ -27,38 +27,42 @@ export function SubscriptionMigrationHandler() {
     }
 
     isMigrating.current = true;
-    const sorted = [...subscriptions].sort((a, b) => a.position - b.position);
-    const failedItems: TrackedSubscription[] = [];
+    try {
+      const sorted = [...subscriptions].sort((a, b) => a.position - b.position);
+      const failedItems: TrackedSubscription[] = [];
 
-    for (const item of sorted) {
-      try {
-        await subscriptionApi.create({
-          name: item.name,
-          amountYen: item.amountYen,
-          billingCycle: item.billingCycle,
-          category: item.category,
-          reviewPriority: item.reviewPriority,
-          locked: item.locked,
-          billingDay: item.billingDay,
-          note: item.note,
-        });
-      } catch {
-        failedItems.push(item);
+      for (const item of sorted) {
+        try {
+          await subscriptionApi.create({
+            name: item.name,
+            amountYen: item.amountYen,
+            billingCycle: item.billingCycle,
+            category: item.category,
+            reviewPriority: item.reviewPriority,
+            locked: item.locked,
+            billingDay: item.billingDay,
+            note: item.note,
+          });
+        } catch {
+          failedItems.push(item);
+        }
       }
-    }
 
-    if (failedItems.length === 0) {
-      clearLocalSubscriptions();
-    } else {
-      writeLocalSubscriptions(failedItems);
-    }
+      if (failedItems.length === 0) {
+        clearLocalSubscriptions();
+      } else {
+        writeLocalSubscriptions(failedItems);
+      }
 
-    if (failedItems.length !== sorted.length) {
-      await mutate((key) => Array.isArray(key) && key[0] === 'subscriptions');
-      await mutate('users/me');
+      if (failedItems.length !== sorted.length) {
+        await mutate((key) => Array.isArray(key) && key[0] === 'subscriptions');
+        await mutate('users/me');
+      }
+    } catch (error) {
+      console.error('[SubscriptionMigrationHandler] Failed to finalize local migration', error);
+    } finally {
+      isMigrating.current = false;
     }
-
-    isMigrating.current = false;
   }, [status]);
 
   useEffect(() => {
