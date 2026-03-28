@@ -1,8 +1,9 @@
 import type { NextAuthOptions } from 'next-auth';
 import GoogleProvider from 'next-auth/providers/google';
 import type { JWT } from 'next-auth/jwt';
+import { resolveServiceBaseUrl } from './utils';
 
-const BACKEND_URL = process.env.BACKEND_URL || 'http://localhost:8080';
+const BACKEND_URL = resolveServiceBaseUrl(process.env.BACKEND_URL, 'http://localhost:8080');
 
 export const authOptions: NextAuthOptions = {
   providers: [

@@ -1,9 +1,10 @@
 import { getSession, signOut } from 'next-auth/react';
+import { resolveServiceBaseUrl } from '@/lib/utils';
 
 const API_URL =
   typeof window !== 'undefined'
-    ? process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8080'
-    : process.env.BACKEND_URL || 'http://localhost:8080';
+    ? resolveServiceBaseUrl(process.env.NEXT_PUBLIC_API_URL, 'http://localhost:8080')
+    : resolveServiceBaseUrl(process.env.BACKEND_URL, 'http://localhost:8080');
 
 export class ApiError extends Error {
   constructor(
