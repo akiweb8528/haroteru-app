@@ -39,7 +39,7 @@ type SubscriptionListResponse struct {
 }
 
 type CreateTrackedSubscriptionInput struct {
-	Name           string                       `json:"name" validate:"required,min=1,max=120"`
+	Name           string                       `json:"name" validate:"required,min=1,max=50"`
 	AmountYen      int                          `json:"amountYen" validate:"required,min=1,max=1000000"`
 	BillingCycle   models.BillingCycle         `json:"billingCycle" validate:"required,oneof=monthly yearly"`
 	Category       models.SubscriptionCategory `json:"category" validate:"required,oneof=video music productivity learning shopping lifestyle utilities other"`
@@ -50,7 +50,7 @@ type CreateTrackedSubscriptionInput struct {
 }
 
 type UpdateTrackedSubscriptionInput struct {
-	Name           *string                      `json:"name" validate:"omitempty,min=1,max=120"`
+	Name           *string                      `json:"name" validate:"omitempty,min=1,max=50"`
 	AmountYen      *int                         `json:"amountYen" validate:"omitempty,min=1,max=1000000"`
 	BillingCycle   *models.BillingCycle        `json:"billingCycle" validate:"omitempty,oneof=monthly yearly"`
 	Category       *models.SubscriptionCategory `json:"category" validate:"omitempty,oneof=video music productivity learning shopping lifestyle utilities other"`
