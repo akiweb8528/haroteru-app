@@ -134,6 +134,27 @@ Google OAuth の設定では、以下の callback / origin を追加してくだ
 
 production 用 Blueprint を作る場合は、同様に `infra/render/production.yaml` を指定し、`haroteru-backend` / `haroteru-frontend` 向けの公開 URL と OAuth 設定を用意してください。
 
+## CI / CD
+
+GitHub Actions の CI は `.github/workflows/ci.yml` で管理しています。
+
+- 対象ブランチ: `main`, `staging`
+- backend: `go test ./...`
+- frontend: `npm ci`, `npm run type-check`, `npm test`
+
+CD は Render Blueprint 側の branch 連携を前提にしています。
+
+- `staging` ブランチ: staging 用 Blueprint に連携
+- `main` ブランチ: production 用 Blueprint に連携
+
+このため、基本運用は次の形です。
+
+1. feature ブランチから `staging` へ PR
+2. CI 通過後に `staging` へマージ
+3. Render staging が自動デプロイ
+4. 動作確認後に `main` へ反映
+5. Render production が自動デプロイ
+
 ## フロントエディタエラー解消
 
 フロントエンドの依存関係は Dev Container 作成時に自動インストールされるため、`next` / `react` / `@types/*` 未導入が原因のエディタエラーは基本的に Dev Container で解消できます。
