@@ -103,4 +103,29 @@ describe('SubscriptionMigrationHandler', () => {
     });
     expect(localStorage.getItem('local_subscriptions')).toBeNull();
   });
+
+  it('キャッシュ更新に失敗しても再試行できる', async () => {
+    const subscriptions = [baseSubscription('sub-1', 'Netflix')];
+    localStorage.setItem('local_subscriptions', JSON.stringify(subscriptions));
+    mockCreate
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce(undefined);
+    mockMutate
+      .mockRejectedValueOnce(new Error('mutate failed'))
+      .mockResolvedValueOnce(undefined)
+      .mockResolvedValueOnce(undefined);
+
+    render(<SubscriptionMigrationHandler />);
+
+    await waitFor(() => {
+      expect(mockCreate).toHaveBeenCalledTimes(1);
+    });
+
+    localStorage.setItem('local_subscriptions', JSON.stringify(subscriptions));
+    requestLocalSubscriptionsMigration();
+
+    await waitFor(() => {
+      expect(mockCreate).toHaveBeenCalledTimes(2);
+    });
+  });
 });
