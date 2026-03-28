@@ -53,4 +53,4 @@ services:
         fromService:
           type: web
           name: haroteru-backend-staging
-          property: hostport
+          envVarKey: PUBLIC_API_URL
