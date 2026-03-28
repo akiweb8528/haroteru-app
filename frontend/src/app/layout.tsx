@@ -11,6 +11,7 @@ import './globals.css';
 const inter = Inter({ subsets: ['latin'] });
 const siteUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3000';
 const googleAnalyticsId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim();
+const analyticsEnvironment = process.env.NEXT_PUBLIC_APP_ENV?.trim();
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
@@ -65,7 +66,9 @@ export default async function RootLayout({ children }: { children: React.ReactNo
                 window.dataLayer = window.dataLayer || [];
                 function gtag(){dataLayer.push(arguments);}
                 gtag('js', new Date());
-                gtag('config', '${googleAnalyticsId}');
+                gtag('config', '${googleAnalyticsId}', ${JSON.stringify(
+                  analyticsEnvironment ? { environment: analyticsEnvironment } : {}
+                )});
               `}
             </Script>
           </>
