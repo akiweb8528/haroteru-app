@@ -32,6 +32,8 @@ const priorities: { value: ReviewPriority; label: string }[] = [
   { value: 'high', label: '優先度高め' },
 ];
 
+const MAX_AMOUNT_YEN = 1_000_000;
+
 export function SubscriptionForm({ initialValues, onSubmit, onCancel, submitLabel = 'サブスクを追加' }: Props) {
   const { taste } = usePreferences();
   const [name, setName] = useState(initialValues?.name ?? '');
@@ -51,6 +53,10 @@ export function SubscriptionForm({ initialValues, onSubmit, onCancel, submitLabe
     e.preventDefault();
     const amount = Number(amountYen);
     if (!name.trim() || !Number.isFinite(amount) || amount <= 0) return;
+    if (amount > MAX_AMOUNT_YEN) {
+      setError('金額は100万円以下で入力してください。');
+      return;
+    }
 
     setIsSubmitting(true);
     setError(null);
@@ -89,7 +95,7 @@ export function SubscriptionForm({ initialValues, onSubmit, onCancel, submitLabe
 
         <label className="block">
           <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">金額</span>
-          <input type="number" min={1} value={amountYen} onChange={(e) => setAmountYen(e.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-brand-400 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" placeholder="980" />
+          <input type="number" min={1} max={MAX_AMOUNT_YEN} value={amountYen} onChange={(e) => setAmountYen(e.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-brand-400 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" placeholder="980" />
         </label>
 
         <label className="block">
