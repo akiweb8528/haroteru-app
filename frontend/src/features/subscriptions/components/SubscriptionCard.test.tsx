@@ -78,6 +78,25 @@ describe('SubscriptionCard', () => {
     expect(screen.getByText('家族プランで利用中')).toBeInTheDocument();
   });
 
+  it('長い note は省略表示し、詳細を見るで展開できる', () => {
+    const longNote = 'a'.repeat(140);
+
+    render(
+      <SubscriptionCard
+        subscription={{ ...baseSubscription, note: longNote }}
+        onUpdate={onUpdate}
+        onDelete={onDelete}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: '詳細を見る' })).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: '詳細を見る' }));
+
+    expect(screen.getByRole('button', { name: '閉じる' })).toBeInTheDocument();
+    expect(screen.getByText(longNote)).toBeInTheDocument();
+  });
+
   it('billingDay がある場合に引き落とし日を表示する', () => {
     render(
       <SubscriptionCard
