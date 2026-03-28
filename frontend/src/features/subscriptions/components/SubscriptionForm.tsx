@@ -33,6 +33,7 @@ const priorities: { value: ReviewPriority; label: string }[] = [
 ];
 
 const MAX_AMOUNT_YEN = 1_000_000;
+const MAX_NAME_LENGTH = 50;
 
 export function SubscriptionForm({ initialValues, onSubmit, onCancel, submitLabel = 'サブスクを追加' }: Props) {
   const { taste } = usePreferences();
@@ -90,7 +91,7 @@ export function SubscriptionForm({ initialValues, onSubmit, onCancel, submitLabe
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block">
           <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">サービス名</span>
-          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={120} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-brand-400 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" placeholder={servicePlaceholder} />
+          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={MAX_NAME_LENGTH} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-brand-400 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" placeholder={servicePlaceholder} />
         </label>
 
         <label className="block">
