@@ -24,10 +24,7 @@ export function LegalDocument({ title, updatedAt, summary, sections }: Props) {
             >
               ← ホームへ戻る
             </Link>
-            <p className="mt-6 text-sm font-semibold uppercase tracking-[0.2em] text-brand-600 dark:text-brand-400">
-              暫定ドラフト
-            </p>
-            <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl dark:text-white">
+            <h1 className="mt-6 text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl dark:text-white">
               {title}
             </h1>
             <p className="mt-3 text-sm text-gray-500 dark:text-gray-400">最終更新日：{updatedAt}</p>
