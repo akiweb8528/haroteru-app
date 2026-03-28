@@ -61,6 +61,15 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
   const guestSyncCopy = taste === 'simple'
     ? '現在のデータはこの端末に保存されています。Googleで同期すると、別の端末でも同じ一覧を利用できます。'
     : '今のデータはこの端末だけに入っとるで。Googleで同期したら、別の端末でも同じ一覧が見られるんや。';
+  const reorderHelpText = taste === 'simple'
+    ? '並び替えは「登録順」のときだけ使えます。'
+    : '並び替えは「登録順」のときだけ使えるで。';
+  const migrationLoadingText = taste === 'simple'
+    ? 'ローカルに保存されていたサブスクを同期しています。少々お待ちください。'
+    : 'ローカルに保存しとったサブスクを同期しとるところやで。少し待ってな。';
+  const migrationRetryText = taste === 'simple'
+    ? 'まだ同期しきれていないサブスクがこの端末に残っています。もう一回同期を試してください。'
+    : 'まだ同期しきれてへんサブスクがこの端末に残っとるで。すまんけど、もう一回同期を試してや。';
 
   const fmtAmount = (n: number) => showApprox ? formatApprox(n) : formatCurrency(n);
 
@@ -137,19 +146,19 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
 
       {!canReorder && (
         <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">
-          並び替えは「登録順」のときだけ使えるで。
+          {reorderHelpText}
         </p>
       )}
 
       {isMigrationLoading && (
         <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-900/10 dark:text-amber-200">
-          ローカルに保存しとったサブスクを同期しとるところやで。少し待ってな。
+          {migrationLoadingText}
         </div>
       )}
 
       {!isMigrationLoading && !isGuest && status === 'authenticated' && hasPendingLocalMigration && (
         <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-900/10 dark:text-amber-200">
-          <p>まだ同期しきれてへんサブスクがこの端末に残っとるで。すまんけど、もう一回同期を試してや。</p>
+          <p>{migrationRetryText}</p>
           <button
             type="button"
             onClick={() => requestLocalSubscriptionsMigration()}
