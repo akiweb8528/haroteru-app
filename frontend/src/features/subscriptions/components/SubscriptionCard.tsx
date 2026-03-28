@@ -222,7 +222,7 @@ export function SubscriptionCard({
               style={isNoteExpanded ? undefined : {
                 display: '-webkit-box',
                 WebkitBoxOrient: 'vertical',
-                WebkitLineClamp: 3,
+                WebkitLineClamp: 1,
                 overflow: 'hidden',
               }}
             >
