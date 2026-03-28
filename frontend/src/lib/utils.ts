@@ -13,6 +13,20 @@ export function formatCurrency(value: number): string {
   }).format(value);
 }
 
+export function resolveServiceBaseUrl(value: string | undefined, fallback: string): string {
+  const candidate = value?.trim();
+  if (!candidate) {
+    return fallback;
+  }
+
+  const withoutTrailingSlash = candidate.replace(/\/+$/, '');
+  if (/^https?:\/\//i.test(withoutTrailingSlash)) {
+    return withoutTrailingSlash;
+  }
+
+  return `http://${withoutTrailingSlash}`;
+}
+
 export const reviewPriorityLabels: Record<string, string> = {
   low: '見直し候補',
   medium: 'ふつう',

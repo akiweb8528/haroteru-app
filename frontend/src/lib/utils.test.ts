@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   cn,
   formatCurrency,
+  resolveServiceBaseUrl,
 } from './utils';
 
 // 環境によって円記号が ¥(U+00A5) または ￥(U+FFE5) になるため
@@ -41,5 +42,19 @@ describe('cn (クラス名マージ)', () => {
   it('TailwindCSS の競合クラスを後勝ちでマージする', () => {
     // tailwind-merge: p-4 に p-2 を上書き
     expect(cn('p-4', 'p-2')).toBe('p-2');
+  });
+});
+
+describe('resolveServiceBaseUrl', () => {
+  it('未設定時は fallback を返す', () => {
+    expect(resolveServiceBaseUrl(undefined, 'http://localhost:8080')).toBe('http://localhost:8080');
+  });
+
+  it('http/https 付き URL はそのまま使う', () => {
+    expect(resolveServiceBaseUrl('https://api.example.com/', 'http://localhost:8080')).toBe('https://api.example.com');
+  });
+
+  it('Render 内部ネットワークの host:port に http を補う', () => {
+    expect(resolveServiceBaseUrl('haroteru-api:10000', 'http://localhost:8080')).toBe('http://haroteru-api:10000');
   });
 });

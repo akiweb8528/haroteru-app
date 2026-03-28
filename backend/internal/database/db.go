@@ -3,6 +3,8 @@ package database
 import (
 	"embed"
 	"fmt"
+	"net/url"
+	"strings"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -17,6 +19,8 @@ var migrationsFS embed.FS
 
 // Connect opens a GORM database connection using pgx driver.
 func Connect(databaseURL string) (*gorm.DB, error) {
+	databaseURL = normalizeDatabaseURL(databaseURL)
+
 	db, err := gorm.Open(postgres.New(postgres.Config{
 		DSN:                  databaseURL,
 		PreferSimpleProtocol: true,
@@ -40,6 +44,8 @@ func Connect(databaseURL string) (*gorm.DB, error) {
 
 // RunMigrations applies all pending up-migrations embedded in the binary.
 func RunMigrations(databaseURL string) error {
+	databaseURL = normalizeDatabaseURL(databaseURL)
+
 	src, err := iofs.New(migrationsFS, "migrations")
 	if err != nil {
 		return fmt.Errorf("creating iofs migration source: %w", err)
@@ -65,4 +71,37 @@ func Ping(db *gorm.DB) error {
 		return err
 	}
 	return sqlDB.Ping()
+}
+
+func normalizeDatabaseURL(rawURL string) string {
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil {
+		return rawURL
+	}
+
+	if !isPostgresScheme(parsedURL.Scheme) || !isNeonHost(parsedURL.Hostname()) {
+		return rawURL
+	}
+
+	query := parsedURL.Query()
+	if query.Get("sslmode") == "" {
+		query.Set("sslmode", "require")
+	}
+	parsedURL.RawQuery = query.Encode()
+
+	return parsedURL.String()
+}
+
+func isPostgresScheme(scheme string) bool {
+	switch strings.ToLower(scheme) {
+	case "postgres", "postgresql":
+		return true
+	default:
+		return false
+	}
+}
+
+func isNeonHost(host string) bool {
+	host = strings.ToLower(host)
+	return strings.HasSuffix(host, ".neon.tech") || strings.HasSuffix(host, ".aws.neon.tech")
 }
