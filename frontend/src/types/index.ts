@@ -34,6 +34,7 @@ export interface MeResponse {
   avatarUrl: string;
   theme: 'light' | 'dark';
   useGoogleAvatar: boolean;
+  taste: 'ossan' | 'simple';
   summary: DashboardSummary;
 }
 

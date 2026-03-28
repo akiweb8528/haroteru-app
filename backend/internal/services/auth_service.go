@@ -49,6 +49,7 @@ func (s *AuthService) GoogleSignIn(ctx context.Context, idToken string) (*AuthRe
 		Email:     payload.Email,
 		Name:      payload.Name,
 		AvatarURL: payload.Picture,
+		Taste:     "ossan",
 	}
 	if err := s.users.Upsert(user); err != nil {
 		return nil, fmt.Errorf("upserting user: %w", err)

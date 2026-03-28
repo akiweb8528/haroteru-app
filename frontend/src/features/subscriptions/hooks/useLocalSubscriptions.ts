@@ -9,6 +9,7 @@ import type {
   DashboardSummary,
 } from '@/types';
 import type { SubscriptionListParams } from '@/features/subscriptions/api/subscription-client';
+import { reorderSubscriptionsWithHiddenItems } from '@/features/subscriptions/lib/reorder';
 
 const STORAGE_KEY = 'local_subscriptions';
 
@@ -138,6 +139,14 @@ export function useLocalSubscriptions(params: SubscriptionListParams = {}) {
     setAllSubscriptions(next);
   }, []);
 
+  const reorder = useCallback(async (draggedId: string, targetId: string): Promise<void> => {
+    const current = loadFromStorage();
+    const visible = applyFilters(current, params);
+    const next = reorderSubscriptionsWithHiddenItems(current, visible, draggedId, targetId);
+    saveToStorage(next);
+    setAllSubscriptions(next);
+  }, [params]);
+
   const filtered = applyFilters(allSubscriptions, params);
   const meta: ListMeta = {
     page: 1,
@@ -156,5 +165,6 @@ export function useLocalSubscriptions(params: SubscriptionListParams = {}) {
     create,
     update,
     remove,
+    reorder,
   };
 }
