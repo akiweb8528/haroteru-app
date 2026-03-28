@@ -39,7 +39,7 @@ export function SubscriptionForm({ initialValues, onSubmit, onCancel, submitLabe
   const [billingCycle, setBillingCycle] = useState<BillingCycle>(initialValues?.billingCycle ?? 'monthly');
   const [category, setCategory] = useState<SubscriptionCategory>(initialValues?.category ?? 'other');
   const [reviewPriority, setReviewPriority] = useState<ReviewPriority>(initialValues?.reviewPriority ?? 'medium');
-  const [locked, setLocked] = useState(initialValues?.locked ?? false);
+  const locked = initialValues?.locked ?? false;
   const [billingDay, setBillingDay] = useState(initialValues?.billingDay ? String(initialValues.billingDay) : '');
   const [note, setNote] = useState(initialValues?.note ?? '');
   const [isSubmitting, setIsSubmitting] = useState(false);
