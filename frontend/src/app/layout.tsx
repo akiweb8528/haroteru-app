@@ -14,7 +14,7 @@ export const metadata: Metadata = {
     template: '%s | サブスク払ろてる',
     default: 'サブスク払ろてる',
   },
-  description: '登録なしですぐ使える、サブスクの軽量ダッシュボード。',
+  description: '登録なしですぐ使える、サブスクの軽量ダッシュボードやで。',
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {

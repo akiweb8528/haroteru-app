@@ -39,7 +39,7 @@ function DeleteSubscriptionDialog({
           </h2>
         </div>
         <p className="mt-3 text-sm text-gray-600 dark:text-gray-300">
-          <span className="font-medium text-gray-900 dark:text-gray-100">「{subscriptionName}」</span> を削除します。この操作は取り消せません。
+          <span className="font-medium text-gray-900 dark:text-gray-100">「{subscriptionName}」</span> を消すで。これ、取り消せへんからな。
         </p>
         <div className="mt-5 flex justify-end gap-2">
           <button

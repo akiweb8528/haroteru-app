@@ -67,7 +67,7 @@ export function SubscriptionForm({ initialValues, onSubmit, onCancel, submitLabe
       if (err instanceof ApiError) {
         setError(err.message);
       } else {
-        setError('保存に失敗しました。もう一度お試しください。');
+        setError('保存でけへんかった。もういっぺん試してや。');
       }
       setIsSubmitting(false);
     }
@@ -122,7 +122,7 @@ export function SubscriptionForm({ initialValues, onSubmit, onCancel, submitLabe
 
       <label className="mt-4 flex items-center gap-3 rounded-xl bg-gray-50 px-4 py-3 text-sm text-gray-700 dark:bg-gray-800 dark:text-gray-300">
         <input type="checkbox" checked={locked} onChange={(e) => setLocked(e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500" />
-        これは今後も使い続ける予定なのでロックしておく
+        これはこれからも使い続けるつもりやからロックしとく
       </label>
 
       <label className="mt-4 block">
