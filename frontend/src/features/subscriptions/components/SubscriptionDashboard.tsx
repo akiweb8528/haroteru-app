@@ -1,0 +1,69 @@
+'use client';
+
+import { useState } from 'react';
+import { signIn } from 'next-auth/react';
+import { formatCurrency } from '@/lib/utils';
+import type { SubscriptionListParams } from '@/features/subscriptions/api/subscription-client';
+import { SubscriptionFilters } from '@/features/subscriptions/components/SubscriptionFilters';
+import { SubscriptionForm } from '@/features/subscriptions/components/SubscriptionForm';
+import { SubscriptionList } from '@/features/subscriptions/components/SubscriptionList';
+import { useLocalSubscriptions } from '@/features/subscriptions/hooks/useLocalSubscriptions';
+import { useSubscriptions } from '@/features/subscriptions/hooks/useSubscriptions';
+
+interface Props {
+  isGuest?: boolean;
+}
+
+export function SubscriptionDashboard({ isGuest = false }: Props) {
+  const [showForm, setShowForm] = useState(false);
+  const [filters, setFilters] = useState<SubscriptionListParams>({ sort: 'position', order: 'asc' });
+
+  const serverHook = useSubscriptions(isGuest ? null : filters);
+  const localHook = useLocalSubscriptions(filters);
+  const { subscriptions, meta, isLoading, error, create, update, remove } = isGuest ? localHook : serverHook;
+  const summary = meta?.summary;
+
+  return (
+    <div className="mx-auto max-w-5xl px-4 py-8">
+      <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="text-sm font-medium text-brand-600">登録なしですぐ使える、サブスクの軽量ダッシュボード</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-900 dark:text-white">今いくら払ろてるか、すぐ分かる。</h1>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-600 dark:text-gray-300">必要なサブスクも、なんとなく続いているサブスクも、まとめて見える化。ロックして残すものと、見直し候補を同じ一覧で管理できます。</p>
+        </div>
+        <button onClick={() => setShowForm(true)} className="rounded-2xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-700">サブスクを追加</button>
+      </div>
+
+      <div className="mb-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        {[
+          { label: '月あたりの目安', value: formatCurrency(summary?.monthlyEstimate ?? 0) },
+          { label: '年あたりの目安', value: formatCurrency(summary?.yearlyEstimate ?? 0) },
+          { label: '登録中の件数', value: `${summary?.subscriptionCount ?? 0}件` },
+          { label: '見直し候補', value: `${summary?.reviewCount ?? 0}件` },
+        ].map((card) => (
+          <div key={card.label} className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+            <p className="text-xs font-medium text-gray-500 dark:text-gray-400">{card.label}</p>
+            <p className="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">{card.value}</p>
+          </div>
+        ))}
+      </div>
+
+      {isGuest && (
+        <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-4 text-sm text-blue-900 dark:border-blue-900/40 dark:bg-blue-900/10 dark:text-blue-200">
+          <p>今のデータはこの端末だけに保存されています。Googleで同期すると、別端末でも同じ一覧を見られます。</p>
+          <button onClick={() => signIn('google', { callbackUrl: '/subscriptions' })} className="mt-2 font-semibold underline underline-offset-2">Googleで同期を有効にする</button>
+        </div>
+      )}
+
+      <div className="mb-4"><SubscriptionFilters filters={filters} onChange={setFilters} /></div>
+
+      {showForm && (
+        <div className="mb-4">
+          <SubscriptionForm onSubmit={async (input) => { await create(input); setShowForm(false); }} onCancel={() => setShowForm(false)} />
+        </div>
+      )}
+
+      <SubscriptionList subscriptions={subscriptions} isLoading={isLoading} error={error} onUpdate={update} onDelete={remove} />
+    </div>
+  );
+}
