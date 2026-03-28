@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import type { TrackedSubscription, UpdateTrackedSubscriptionInput } from '@/types';
 import { SubscriptionCard } from '@/features/subscriptions/components/SubscriptionCard';
 
@@ -9,9 +10,14 @@ interface Props {
   error: Error | null | undefined;
   onUpdate: (id: string, input: UpdateTrackedSubscriptionInput) => Promise<TrackedSubscription>;
   onDelete: (id: string) => Promise<void>;
+  onReorder: (draggedId: string, targetId: string) => Promise<void>;
+  canReorder: boolean;
 }
 
-export function SubscriptionList({ subscriptions, isLoading, error, onUpdate, onDelete }: Props) {
+export function SubscriptionList({ subscriptions, isLoading, error, onUpdate, onDelete, onReorder, canReorder }: Props) {
+  const [draggedId, setDraggedId] = useState<string | null>(null);
+  const [dropTargetId, setDropTargetId] = useState<string | null>(null);
+
   if (isLoading) {
     return (
       <div className="space-y-3">
@@ -28,5 +34,38 @@ export function SubscriptionList({ subscriptions, isLoading, error, onUpdate, on
     return <div className="rounded-2xl border-2 border-dashed border-gray-200 px-6 py-12 text-center text-sm text-gray-500 dark:border-gray-700 dark:text-gray-400">まだサブスクがあらへん。まず1件登録して、今の支出を見える化しようや。</div>;
   }
 
-  return <div className="space-y-3">{subscriptions.map((item) => <SubscriptionCard key={item.id} subscription={item} onUpdate={onUpdate} onDelete={onDelete} />)}</div>;
+  return (
+    <div className="space-y-3">
+      {subscriptions.map((item) => (
+        <SubscriptionCard
+          key={item.id}
+          subscription={item}
+          onUpdate={onUpdate}
+          onDelete={onDelete}
+          canReorder={canReorder}
+          isDragging={draggedId === item.id}
+          isDropTarget={dropTargetId === item.id}
+          onDragStart={setDraggedId}
+          onDragEnd={() => {
+            setDraggedId(null);
+            setDropTargetId(null);
+          }}
+          onDragOver={(targetId) => {
+            if (!draggedId || draggedId === targetId) return;
+            setDropTargetId(targetId);
+          }}
+          onDrop={async (targetId) => {
+            if (!draggedId || draggedId === targetId) {
+              setDraggedId(null);
+              setDropTargetId(null);
+              return;
+            }
+            await onReorder(draggedId, targetId);
+            setDraggedId(null);
+            setDropTargetId(null);
+          }}
+        />
+      ))}
+    </div>
+  );
 }

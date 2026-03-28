@@ -26,6 +26,7 @@ const baseSubscription: TrackedSubscription = {
 describe('SubscriptionCard', () => {
   const onUpdate = vi.fn().mockResolvedValue(baseSubscription);
   const onDelete = vi.fn().mockResolvedValue(undefined);
+  const onReorder = vi.fn().mockResolvedValue(undefined);
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -131,5 +132,19 @@ describe('SubscriptionCard', () => {
     fireEvent.click(screen.getByRole('button', { name: '編集' }));
 
     expect(screen.getByTestId('subscription-form')).toBeInTheDocument();
+  });
+
+  it('並び替え可能なとき左側にドラッグハンドルを表示する', () => {
+    render(
+      <SubscriptionCard
+        subscription={baseSubscription}
+        onUpdate={onUpdate}
+        onDelete={onDelete}
+        canReorder
+        onDragStart={onReorder}
+      />,
+    );
+
+    expect(screen.getByRole('button', { name: 'ドラッグして並び替える' })).toBeInTheDocument();
   });
 });

@@ -22,12 +22,14 @@ type MeResponse struct {
 	AvatarURL       string                        `json:"avatarUrl"`
 	Theme           string                        `json:"theme"`
 	UseGoogleAvatar bool                          `json:"useGoogleAvatar"`
+	Taste           string                        `json:"taste"`
 	Summary         repositories.DashboardSummary `json:"summary"`
 }
 
 type UpdatePreferencesInput struct {
 	Theme           *string `json:"theme"`
 	UseGoogleAvatar *bool   `json:"useGoogleAvatar"`
+	Taste           *string `json:"taste"`
 }
 
 func (s *UserService) UpdatePreferences(userID string, input UpdatePreferencesInput) (*MeResponse, error) {
@@ -37,6 +39,9 @@ func (s *UserService) UpdatePreferences(userID string, input UpdatePreferencesIn
 	}
 	if input.UseGoogleAvatar != nil {
 		updates["use_google_avatar"] = *input.UseGoogleAvatar
+	}
+	if input.Taste != nil {
+		updates["taste"] = *input.Taste
 	}
 	if len(updates) == 0 {
 		return s.GetMe(userID)
@@ -69,6 +74,7 @@ func (s *UserService) GetMe(userID string) (*MeResponse, error) {
 		AvatarURL:       user.AvatarURL,
 		Theme:           user.Theme,
 		UseGoogleAvatar: user.UseGoogleAvatar,
+		Taste:           user.Taste,
 		Summary:         *summary,
 	}, nil
 }

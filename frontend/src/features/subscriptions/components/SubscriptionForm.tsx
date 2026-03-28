@@ -120,11 +120,6 @@ export function SubscriptionForm({ initialValues, onSubmit, onCancel, submitLabe
         </label>
       </div>
 
-      <label className="mt-4 flex items-center gap-3 rounded-xl bg-gray-50 px-4 py-3 text-sm text-gray-700 dark:bg-gray-800 dark:text-gray-300">
-        <input type="checkbox" checked={locked} onChange={(e) => setLocked(e.target.checked)} className="h-4 w-4 rounded border-gray-300 text-brand-600 focus:ring-brand-500" />
-        これはこれからも使い続けるつもりやからロックしとく
-      </label>
-
       <label className="mt-4 block">
         <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">メモ</span>
         <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} maxLength={500} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-brand-400 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" placeholder="家族共有、年払い、見直し候補など" />

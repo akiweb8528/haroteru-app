@@ -18,6 +18,10 @@ export type SubscriptionListParams = {
   limit?: number;
 };
 
+export type ReorderSubscriptionsInput = {
+  items: { id: string; position: number }[];
+};
+
 export const subscriptionApi = {
   list(params: SubscriptionListParams = {}): Promise<SubscriptionListResponse> {
     const qs = new URLSearchParams();
@@ -47,5 +51,11 @@ export const subscriptionApi = {
   },
   delete(id: string): Promise<void> {
     return apiRequest<void>(`/subscriptions/${id}`, { method: 'DELETE' });
+  },
+  reorder(input: ReorderSubscriptionsInput): Promise<void> {
+    return apiRequest<void>('/subscriptions/reorder', {
+      method: 'PATCH',
+      body: JSON.stringify(input),
+    });
   },
 };

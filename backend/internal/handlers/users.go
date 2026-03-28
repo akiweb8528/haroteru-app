@@ -30,6 +30,9 @@ func (h *UserHandler) UpdatePreferences(c echo.Context) error {
 	if req.Theme != nil && *req.Theme != "light" && *req.Theme != "dark" {
 		return echo.NewHTTPError(http.StatusBadRequest, errorResponse("invalid_input", "Theme must be 'light' or 'dark'"))
 	}
+	if req.Taste != nil && *req.Taste != "ossan" && *req.Taste != "simple" {
+		return echo.NewHTTPError(http.StatusBadRequest, errorResponse("invalid_input", "Taste must be 'ossan' or 'simple'"))
+	}
 
 	me, err := h.svc.UpdatePreferences(userID, req)
 	if err != nil {

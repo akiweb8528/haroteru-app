@@ -36,6 +36,7 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
     try {
       localStorage.setItem('theme', 'light');
       localStorage.setItem('useGoogleAvatar', 'true');
+      localStorage.setItem('taste', 'ossan');
       document.documentElement.classList.remove('dark');
     } catch {}
     await signOut({ callbackUrl: '/auth/signin' });

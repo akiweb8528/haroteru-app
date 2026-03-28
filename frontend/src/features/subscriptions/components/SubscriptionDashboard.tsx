@@ -9,6 +9,7 @@ import { SubscriptionForm } from '@/features/subscriptions/components/Subscripti
 import { SubscriptionList } from '@/features/subscriptions/components/SubscriptionList';
 import { useLocalSubscriptions } from '@/features/subscriptions/hooks/useLocalSubscriptions';
 import { useSubscriptions } from '@/features/subscriptions/hooks/useSubscriptions';
+import { usePreferences } from '@/providers/PreferencesProvider';
 
 interface Props {
   isGuest?: boolean;
@@ -29,11 +30,27 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
   const [showForm, setShowForm] = useState(false);
   const [showApprox, setShowApprox] = useState(true);
   const [filters, setFilters] = useState<SubscriptionListParams>({ sort: 'position', order: 'asc' });
+  const { taste } = usePreferences();
 
   const serverHook = useSubscriptions(isGuest ? null : filters);
   const localHook = useLocalSubscriptions(filters);
-  const { subscriptions, meta, isLoading, error, create, update, remove } = isGuest ? localHook : serverHook;
+  const { subscriptions, meta, isLoading, error, create, update, remove, reorder } = isGuest ? localHook : serverHook;
   const summary = meta?.summary;
+  const canReorder = (filters.sort ?? 'position') === 'position' && (filters.order ?? 'asc') === 'asc';
+  const dashboardCopy = isGuest || taste === 'ossan'
+    ? {
+        eyebrow: '登録なしですぐ使えるで、サブスクのダッシュボード',
+        title: '今なんぼ払ろてるか、すぐ分かるで。',
+        description: '必要なサブスクも、なんとなく続いとるサブスクも、まとめて見える化やで。ロックして残すもんと、見直し候補を同じ一覧で管理できるんや。',
+      }
+    : {
+        eyebrow: 'すぐ使えるサブスク管理',
+        title: 'サブスクの支出をすぐ確認できます。',
+        description: '契約中のサービスを一覧で整理し、残すものと見直すものをまとめて管理できます。',
+      };
+  const guestSyncCopy = taste === 'simple'
+    ? '現在のデータはこの端末に保存されています。Googleで同期すると、別の端末でも同じ一覧を利用できます。'
+    : '今のデータはこの端末だけに入っとるで。Googleで同期したら、別の端末でも同じ一覧が見られるんや。';
 
   const fmtAmount = (n: number) => showApprox ? formatApprox(n) : formatCurrency(n);
 
@@ -41,9 +58,9 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
     <div className="mx-auto max-w-5xl px-4 py-8">
       <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <p className="text-sm font-medium text-brand-600">登録なしですぐ使えるで、サブスクのダッシュボード</p>
-          <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-900 dark:text-white">今なんぼ払ろてるか、すぐ分かるで。</h1>
-          <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-600 dark:text-gray-300">必要なサブスクも、なんとなく続いとるサブスクも、まとめて見える化やで。ロックして残すもんと、見直し候補を同じ一覧で管理できるんや。</p>
+          <p className="text-sm font-medium text-brand-600">{dashboardCopy.eyebrow}</p>
+          <h1 className="mt-2 text-3xl font-bold tracking-tight text-gray-900 dark:text-white">{dashboardCopy.title}</h1>
+          <p className="mt-3 max-w-2xl text-sm leading-6 text-gray-600 dark:text-gray-300">{dashboardCopy.description}</p>
         </div>
         <button onClick={() => setShowForm(true)} className="rounded-2xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-700">サブスクを追加</button>
       </div>
@@ -70,7 +87,7 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
 
       {isGuest && (
         <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-4 text-sm text-blue-900 dark:border-blue-900/40 dark:bg-blue-900/10 dark:text-blue-200">
-          <p>今のデータはこの端末だけに入っとるで。Googleで同期したら、別の端末でも同じ一覧が見られるんや。</p>
+          <p>{guestSyncCopy}</p>
           <button onClick={() => signIn('google', { callbackUrl: '/subscriptions' })} className="mt-2 font-semibold underline underline-offset-2">Googleで同期を有効にする</button>
         </div>
       )}
@@ -83,7 +100,21 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
         </div>
       )}
 
-      <SubscriptionList subscriptions={subscriptions} isLoading={isLoading} error={error} onUpdate={update} onDelete={remove} />
+      {!canReorder && (
+        <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">
+          並び替えは「登録順」のときだけ使えるで。
+        </p>
+      )}
+
+      <SubscriptionList
+        subscriptions={subscriptions}
+        isLoading={isLoading}
+        error={error}
+        onUpdate={update}
+        onDelete={remove}
+        onReorder={reorder}
+        canReorder={canReorder}
+      />
     </div>
   );
 }

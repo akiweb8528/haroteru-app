@@ -3,15 +3,14 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import { signOut, useSession } from 'next-auth/react';
-import { formatCurrency, cn } from '@/lib/utils';
+import { cn } from '@/lib/utils';
+import { tasteLabels } from '@/lib/taste';
 import { userApi } from '@/features/account/api/user-client';
-import { useMe } from '@/features/account/hooks/useMe';
 import { usePreferences } from '@/providers/PreferencesProvider';
 
 export function SettingsView() {
   const { data: session } = useSession();
-  const { theme, useGoogleAvatar, setTheme, setUseGoogleAvatar, resetPreferences } = usePreferences();
-  const { me, summary, isLoading: meLoading } = useMe();
+  const { theme, useGoogleAvatar, taste, setTheme, setUseGoogleAvatar, setTaste, resetPreferences } = usePreferences();
 
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleteInput, setDeleteInput] = useState('');
@@ -20,6 +19,35 @@ export function SettingsView() {
 
   const user = session?.user;
   const initials = user?.name?.[0]?.toUpperCase() ?? '?';
+  const copy = taste === 'ossan'
+    ? {
+        pageDescription: '同期設定とアプリの見た目を管理するで。',
+        syncDescription: 'Googleアカウントでログインしたら、登録したサブスクを端末またいで持ち歩けるんや。',
+        iconDescription: 'ナビゲーションバーに出るアイコンを選んでや。',
+        googleAvatarDescription: 'Googleのプロフィール写真を使うで',
+        anonymousAvatarDescription: 'シンプルなシルエットを使うで',
+        themeDescription: 'アプリの見た目を選んでや。',
+        lightThemeDescription: '明るい感じ',
+        darkThemeDescription: '暗い感じ',
+        tasteDescription: 'サブスク画面の説明文の雰囲気を選べるで。',
+        deleteDescription: 'アカウントを消したら、同期済みのサブスク情報と設定が全部なくなるで。ほんまに消えるからな。',
+        deleteConfirmDescription: '念のため、メールアドレス',
+        deleteError: 'アカウントを消せへんかった。ちょい待ってからもういっぺん試してや。',
+      }
+    : {
+        pageDescription: '同期設定と表示設定を管理します。',
+        syncDescription: 'Googleアカウントでログインすると、登録したサブスクを複数端末で同期できます。',
+        iconDescription: 'ナビゲーションバーに表示するアイコンを選択できます。',
+        googleAvatarDescription: 'Googleのプロフィール写真を使用します',
+        anonymousAvatarDescription: '匿名アイコンを使用します',
+        themeDescription: 'アプリの表示テーマを選択できます。',
+        lightThemeDescription: '明るい表示',
+        darkThemeDescription: '暗い表示',
+        tasteDescription: 'サブスク画面の説明文のテイストを選択できます。',
+        deleteDescription: 'アカウントを削除すると、同期済みのサブスク情報と設定がすべて削除されます。',
+        deleteConfirmDescription: '確認のため、メールアドレス',
+        deleteError: 'アカウントの削除に失敗しました。時間を空けてもう一度お試しください。',
+      };
 
   async function handleDeleteAccount() {
     setIsDeleting(true);
@@ -29,7 +57,7 @@ export function SettingsView() {
       resetPreferences();
       await signOut({ callbackUrl: '/' });
     } catch {
-      setDeleteError('アカウントを消せへんかった。ちょい待ってからもういっぺん試してや。');
+      setDeleteError(copy.deleteError);
       setIsDeleting(false);
     }
   }
@@ -37,11 +65,11 @@ export function SettingsView() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8">
       <h1 className="mb-2 text-2xl font-bold text-gray-900 dark:text-gray-100">設定</h1>
-      <p className="mb-8 text-gray-500 dark:text-gray-400">同期設定とアプリの見た目を管理するで。</p>
+      <p className="mb-8 text-gray-500 dark:text-gray-400">{copy.pageDescription}</p>
 
       <section className="mb-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <h2 className="mb-1 text-lg font-semibold text-gray-900 dark:text-gray-100">同期アカウント</h2>
-        <p className="mb-5 text-sm text-gray-500 dark:text-gray-400">Googleアカウントでログインしたら、登録したサブスクを端末またいで持ち歩けるんや。</p>
+        <p className="mb-5 text-sm text-gray-500 dark:text-gray-400">{copy.syncDescription}</p>
 
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">
@@ -62,7 +90,7 @@ export function SettingsView() {
 
       <section className="mb-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <h2 className="mb-1 text-lg font-semibold text-gray-900 dark:text-gray-100">アイコン</h2>
-        <p className="mb-5 text-sm text-gray-500 dark:text-gray-400">ナビゲーションバーに出るアイコンを選んでや。</p>
+        <p className="mb-5 text-sm text-gray-500 dark:text-gray-400">{copy.iconDescription}</p>
 
         <div className="flex gap-4">
           <button
@@ -81,7 +109,7 @@ export function SettingsView() {
             )}
             <div className="text-center">
               <p className="text-sm font-medium text-gray-900 dark:text-gray-100">Googleアイコン</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">Googleのプロフィール写真を使うで</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{copy.googleAvatarDescription}</p>
             </div>
           </button>
 
@@ -101,7 +129,7 @@ export function SettingsView() {
             </div>
             <div className="text-center">
               <p className="text-sm font-medium text-gray-900 dark:text-gray-100">匿名アイコン</p>
-              <p className="text-xs text-gray-500 dark:text-gray-400">シンプルなシルエットを使うで</p>
+              <p className="text-xs text-gray-500 dark:text-gray-400">{copy.anonymousAvatarDescription}</p>
             </div>
           </button>
         </div>
@@ -109,7 +137,7 @@ export function SettingsView() {
 
       <section className="mb-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <h2 className="mb-1 text-lg font-semibold text-gray-900 dark:text-gray-100">テーマ</h2>
-        <p className="mb-5 text-sm text-gray-500 dark:text-gray-400">アプリの見た目を選んでや。</p>
+        <p className="mb-5 text-sm text-gray-500 dark:text-gray-400">{copy.themeDescription}</p>
 
         <div className="flex gap-4">
           {(['light', 'dark'] as const).map((value) => (
@@ -128,7 +156,36 @@ export function SettingsView() {
               </div>
               <div className="text-center">
                 <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{value === 'light' ? 'ライト' : 'ダーク'}</p>
-                <p className="text-xs text-gray-500 dark:text-gray-400">{value === 'light' ? '明るい感じ' : '暗い感じ'}</p>
+                <p className="text-xs text-gray-500 dark:text-gray-400">{value === 'light' ? copy.lightThemeDescription : copy.darkThemeDescription}</p>
+              </div>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="mb-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+        <h2 className="mb-1 text-lg font-semibold text-gray-900 dark:text-gray-100">説明テイスト</h2>
+        <p className="mb-5 text-sm text-gray-500 dark:text-gray-400">{copy.tasteDescription}</p>
+
+        <div className="flex gap-4">
+          {(['ossan', 'simple'] as const).map((value) => (
+            <button
+              key={value}
+              onClick={() => setTaste(value)}
+              className={cn(
+                'flex flex-1 flex-col items-start gap-3 rounded-xl border-2 p-4 text-left transition',
+                taste === value
+                  ? 'border-brand-500 bg-brand-50 dark:bg-brand-900/20'
+                  : 'border-gray-200 hover:border-gray-300 dark:border-gray-700 dark:hover:border-gray-600',
+              )}
+            >
+              <div>
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100">{tasteLabels[value]}</p>
+                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                  {value === 'ossan'
+                    ? '説明多めの関西のおっさん口調で案内するで'
+                    : '必要最低限の説明だけを一般的な口調で表示する'}
+                </p>
               </div>
             </button>
           ))}
@@ -137,7 +194,7 @@ export function SettingsView() {
 
       <section className="rounded-2xl border border-red-200 bg-white p-6 shadow-sm dark:border-red-900/50 dark:bg-gray-900">
         <h2 className="mb-1 text-lg font-semibold text-red-600 dark:text-red-400">アカウント削除</h2>
-        <p className="mb-5 text-sm text-gray-500 dark:text-gray-400">アカウントを消したら、同期済みのサブスク情報と設定が全部なくなるで。ほんまに消えるからな。</p>
+        <p className="mb-5 text-sm text-gray-500 dark:text-gray-400">{copy.deleteDescription}</p>
 
         {!deleteConfirm ? (
           <button
@@ -149,7 +206,7 @@ export function SettingsView() {
         ) : (
           <div className="space-y-4">
             <div className="rounded-xl border border-red-100 bg-red-50 p-4 dark:border-red-900/30 dark:bg-red-900/10">
-              <p className="text-sm font-medium text-red-700 dark:text-red-400">念のため、メールアドレス <span className="font-bold">{user?.email}</span> を入力してや。</p>
+              <p className="text-sm font-medium text-red-700 dark:text-red-400">{copy.deleteConfirmDescription} <span className="font-bold">{user?.email}</span> を入力してください。</p>
             </div>
 
             <input

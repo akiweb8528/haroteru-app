@@ -10,6 +10,7 @@ type User struct {
 	AvatarURL       string    `gorm:"column:avatar_url;not null;default:''"          json:"avatarUrl"`
 	Theme           string    `gorm:"column:theme;not null;default:'light'"          json:"theme"`
 	UseGoogleAvatar bool      `gorm:"column:use_google_avatar;not null;default:true" json:"useGoogleAvatar"`
+	Taste           string    `gorm:"column:taste;not null;default:'ossan'"          json:"taste"`
 	CreatedAt       time.Time `json:"createdAt"`
 	UpdatedAt       time.Time `json:"updatedAt"`
 }

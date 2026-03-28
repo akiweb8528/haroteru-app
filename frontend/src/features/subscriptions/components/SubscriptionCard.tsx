@@ -9,6 +9,13 @@ interface Props {
   subscription: TrackedSubscription;
   onUpdate: (id: string, input: UpdateTrackedSubscriptionInput) => Promise<TrackedSubscription>;
   onDelete: (id: string) => Promise<void>;
+  canReorder?: boolean;
+  isDragging?: boolean;
+  isDropTarget?: boolean;
+  onDragStart?: (id: string) => void;
+  onDragEnd?: () => void;
+  onDragOver?: (id: string) => void;
+  onDrop?: (id: string) => void;
 }
 
 interface DeleteSubscriptionDialogProps {
@@ -62,7 +69,18 @@ function DeleteSubscriptionDialog({
   );
 }
 
-export function SubscriptionCard({ subscription, onUpdate, onDelete }: Props) {
+export function SubscriptionCard({
+  subscription,
+  onUpdate,
+  onDelete,
+  canReorder = false,
+  isDragging = false,
+  isDropTarget = false,
+  onDragStart,
+  onDragEnd,
+  onDragOver,
+  onDrop,
+}: Props) {
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isTogglingLock, setIsTogglingLock] = useState(false);
@@ -109,15 +127,52 @@ export function SubscriptionCard({ subscription, onUpdate, onDelete }: Props) {
         className={cn(
           'rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition dark:border-gray-700 dark:bg-gray-900',
           isDeleting && 'pointer-events-none opacity-50',
+          isDragging && 'opacity-40',
+          isDropTarget && 'border-brand-400 ring-2 ring-brand-200 dark:ring-brand-900/50',
         )}
+        onDragOver={(event) => {
+          if (!canReorder || !onDragOver) return;
+          event.preventDefault();
+          onDragOver(subscription.id);
+        }}
+        onDrop={(event) => {
+          if (!canReorder || !onDrop) return;
+          event.preventDefault();
+          onDrop(subscription.id);
+        }}
       >
         <div className="flex items-start justify-between gap-4">
-          <div>
+          <div className="flex items-start gap-3">
+            <button
+              type="button"
+              draggable={canReorder}
+              onDragStart={(event) => {
+                if (!canReorder || !onDragStart) return;
+                event.dataTransfer.effectAllowed = 'move';
+                event.dataTransfer.setData('text/plain', subscription.id);
+                onDragStart(subscription.id);
+              }}
+              onDragEnd={() => onDragEnd?.()}
+              aria-label={canReorder ? 'ドラッグして並び替える' : '並び替えはできません'}
+              title={canReorder ? 'ドラッグして並び替える' : '登録順のときだけ並び替えできます'}
+              className={cn(
+                'mt-0.5 rounded-lg p-2 text-gray-400 transition',
+                canReorder
+                  ? 'cursor-grab hover:bg-gray-100 hover:text-gray-600 active:cursor-grabbing dark:hover:bg-gray-800 dark:hover:text-gray-200'
+                  : 'cursor-not-allowed opacity-40',
+              )}
+            >
+              <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path d="M7 4a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm0 6a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm-1.5 7.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM16 4a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm0 6a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm-1.5 7.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" />
+              </svg>
+            </button>
+            <div>
             <div className="flex items-center gap-2">
               <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{subscription.name}</h3>
               {subscription.locked && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">ロック中</span>}
             </div>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{formatCurrency(subscription.amountYen)} / {billingCycleLabels[subscription.billingCycle]}</p>
+            </div>
           </div>
           <div className="flex items-center gap-2">
             <button

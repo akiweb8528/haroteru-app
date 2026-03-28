@@ -27,7 +27,7 @@ export function Navbar({ user }: Props) {
   }
 
   const navItems = [
-    { href: '/subscriptions', label: 'ダッシュボード' },
+    { href: '/subscriptions', label: 'ダッシュボード', mobileOnly: true },
     { href: '/settings', label: '設定' },
   ];
 
@@ -106,7 +106,7 @@ export function Navbar({ user }: Props) {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700"
+                    className={cn('block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700', item.mobileOnly && 'sm:hidden')}
                     onClick={() => setMenuOpen(false)}
                   >
                     {item.label}
