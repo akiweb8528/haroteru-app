@@ -74,8 +74,8 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
 
       <div className="mb-6 grid gap-3 grid-cols-2">
         {[
-          { label: '月あたりの目安', value: fmtAmount(summary?.monthlyEstimate ?? 0) },
-          { label: '年あたりの目安', value: fmtAmount(summary?.yearlyEstimate ?? 0) },
+          { label: '月額合計', value: fmtAmount(summary?.monthlyEstimate ?? 0) },
+          { label: '年額合計', value: fmtAmount(summary?.yearlyEstimate ?? 0) },
         ].map((card) => (
           <div key={card.label} className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
             <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
