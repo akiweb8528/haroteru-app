@@ -8,7 +8,11 @@ import { SubscriptionFilters } from '@/features/subscriptions/components/Subscri
 import { SubscriptionForm } from '@/features/subscriptions/components/SubscriptionForm';
 import { SubscriptionList } from '@/features/subscriptions/components/SubscriptionList';
 import { useLocalSubscriptions } from '@/features/subscriptions/hooks/useLocalSubscriptions';
-import { hasLocalSubscriptions, LOCAL_SUBSCRIPTIONS_UPDATED_EVENT } from '@/features/subscriptions/lib/local-storage';
+import {
+  hasLocalSubscriptions,
+  LOCAL_SUBSCRIPTIONS_UPDATED_EVENT,
+  requestLocalSubscriptionsMigration,
+} from '@/features/subscriptions/lib/local-storage';
 import { useSubscriptions } from '@/features/subscriptions/hooks/useSubscriptions';
 import { usePreferences } from '@/providers/PreferencesProvider';
 
@@ -140,6 +144,19 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
       {isMigrationLoading && (
         <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-900/10 dark:text-amber-200">
           ローカルに保存しとったサブスクを同期しとるところやで。少し待ってな。
+        </div>
+      )}
+
+      {!isMigrationLoading && !isGuest && status === 'authenticated' && hasPendingLocalMigration && (
+        <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-900/10 dark:text-amber-200">
+          <p>まだ同期しきれてへんサブスクがこの端末に残っとるで。すまんけど、もう一回同期を試してや。</p>
+          <button
+            type="button"
+            onClick={() => requestLocalSubscriptionsMigration()}
+            className="mt-2 font-semibold underline underline-offset-2"
+          >
+            同期を再試行する
+          </button>
         </div>
       )}
 
