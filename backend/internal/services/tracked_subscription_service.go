@@ -7,8 +7,18 @@ import (
 	"haroteru/backend/internal/repositories"
 )
 
+type subscriptionRepository interface {
+	List(userID string, f repositories.SubscriptionFilter) (*repositories.SubscriptionListResult, error)
+	Create(item *models.TrackedSubscription) error
+	FindByID(id, userID string) (*models.TrackedSubscription, error)
+	Update(item *models.TrackedSubscription, fields map[string]any) error
+	Delete(id, userID string) error
+	Reorder(userID string, items []repositories.ReorderItem) error
+	Summary(userID string) (*repositories.DashboardSummary, error)
+}
+
 type TrackedSubscriptionService struct {
-	subscriptions *repositories.TrackedSubscriptionRepository
+	subscriptions subscriptionRepository
 }
 
 func NewTrackedSubscriptionService(subscriptions *repositories.TrackedSubscriptionRepository) *TrackedSubscriptionService {
@@ -110,7 +120,7 @@ func (s *TrackedSubscriptionService) Update(id, userID string, input *UpdateTrac
 		return nil, err
 	}
 
-	fields := map[string]interface{}{}
+	fields := map[string]any{}
 	if input.Name != nil {
 		fields["name"] = *input.Name
 	}
