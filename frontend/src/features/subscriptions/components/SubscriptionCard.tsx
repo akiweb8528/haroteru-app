@@ -89,6 +89,8 @@ export function SubscriptionCard({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isTogglingLock, setIsTogglingLock] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [isNoteExpanded, setIsNoteExpanded] = useState(false);
+  const hasLongNote = subscription.note.length > 120 || subscription.note.includes('\n');
 
   const handleDelete = async () => {
     setShowConfirm(false);
@@ -213,7 +215,30 @@ export function SubscriptionCard({
           {subscription.billingDay && <span className="rounded-full bg-gray-100 px-2.5 py-1 text-gray-700 dark:bg-gray-800 dark:text-gray-300">毎月 {subscription.billingDay} 日前後</span>}
         </div>
 
-        {subscription.note && <p className="mt-4 whitespace-pre-wrap break-all text-sm leading-6 text-gray-600 dark:text-gray-300">{subscription.note}</p>}
+        {subscription.note && (
+          <div className="mt-4">
+            <p
+              className="whitespace-pre-wrap break-all text-sm leading-6 text-gray-600 dark:text-gray-300"
+              style={isNoteExpanded ? undefined : {
+                display: '-webkit-box',
+                WebkitBoxOrient: 'vertical',
+                WebkitLineClamp: 3,
+                overflow: 'hidden',
+              }}
+            >
+              {subscription.note}
+            </p>
+            {hasLongNote && (
+              <button
+                type="button"
+                onClick={() => setIsNoteExpanded((current) => !current)}
+                className="mt-2 text-sm font-medium text-brand-600 transition hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300"
+              >
+                {isNoteExpanded ? '閉じる' : '詳細を見る'}
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {showConfirm && (
