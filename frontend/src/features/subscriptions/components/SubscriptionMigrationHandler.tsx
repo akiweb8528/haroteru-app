@@ -5,8 +5,7 @@ import { useSession } from 'next-auth/react';
 import { mutate } from 'swr';
 import type { TrackedSubscription } from '@/types';
 import { subscriptionApi } from '@/features/subscriptions/api/subscription-client';
-
-const STORAGE_KEY = 'local_subscriptions';
+import { clearLocalSubscriptions, readLocalSubscriptions } from '@/features/subscriptions/lib/local-storage';
 
 export function SubscriptionMigrationHandler() {
   const { status } = useSession();
@@ -16,19 +15,10 @@ export function SubscriptionMigrationHandler() {
     if (status !== 'authenticated' || migrated.current) return;
     migrated.current = true;
 
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return;
-
-    let subscriptions: TrackedSubscription[];
-    try {
-      subscriptions = JSON.parse(raw);
-    } catch {
-      localStorage.removeItem(STORAGE_KEY);
-      return;
-    }
+    let subscriptions: TrackedSubscription[] = readLocalSubscriptions();
 
     if (!subscriptions.length) {
-      localStorage.removeItem(STORAGE_KEY);
+      clearLocalSubscriptions();
       return;
     }
 
@@ -49,7 +39,7 @@ export function SubscriptionMigrationHandler() {
           });
         } catch {}
       }
-      localStorage.removeItem(STORAGE_KEY);
+      clearLocalSubscriptions();
       await mutate((key) => Array.isArray(key) && key[0] === 'subscriptions');
       await mutate('users/me');
     })();
