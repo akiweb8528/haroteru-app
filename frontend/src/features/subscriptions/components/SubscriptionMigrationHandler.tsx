@@ -15,7 +15,7 @@ export function SubscriptionMigrationHandler() {
     if (status !== 'authenticated' || migrated.current) return;
     migrated.current = true;
 
-    let subscriptions: TrackedSubscription[] = readLocalSubscriptions();
+    const subscriptions: TrackedSubscription[] = readLocalSubscriptions();
 
     if (!subscriptions.length) {
       clearLocalSubscriptions();
