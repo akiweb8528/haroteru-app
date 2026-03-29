@@ -9,12 +9,36 @@ import { SubscriptionMigrationHandler } from '@/features/subscriptions/component
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
-const siteUrl = process.env.NEXTAUTH_URL ?? 'http://localhost:3000';
+
+function resolveSiteUrl() {
+  const candidates = [
+    process.env.NEXTAUTH_URL,
+    process.env.VERCEL_PROJECT_PRODUCTION_URL && `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}`,
+    process.env.VERCEL_URL && `https://${process.env.VERCEL_URL}`,
+    'http://localhost:3000',
+  ];
+
+  for (const candidate of candidates) {
+    if (!candidate) {
+      continue;
+    }
+
+    try {
+      return new URL(candidate);
+    } catch {
+      continue;
+    }
+  }
+
+  return new URL('http://localhost:3000');
+}
+
+const siteUrl = resolveSiteUrl();
 const googleAnalyticsId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim();
 const analyticsEnvironment = process.env.NEXT_PUBLIC_APP_ENV?.trim();
 
 export const metadata: Metadata = {
-  metadataBase: new URL(siteUrl),
+  metadataBase: siteUrl,
   title: {
     template: '%s | サブスク払ろてる',
     default: 'サブスク払ろてる',
@@ -23,7 +47,7 @@ export const metadata: Metadata = {
   openGraph: {
     type: 'website',
     locale: 'ja_JP',
-    url: siteUrl,
+    url: siteUrl.toString(),
     siteName: 'サブスク払ろてる',
     title: 'サブスク払ろてる',
     description: '登録なしですぐ使える、サブスクの軽量ダッシュボードやで。',
