@@ -50,13 +50,18 @@ export function SubscriptionForm({ initialValues, onSubmit, onCancel, submitLabe
   const [error, setError] = useState<string | null>(null);
   const servicePlaceholder = taste === 'ossan' ? 'Amazon Prime、Netflix、 とか' : 'Amazon Prime、Netflix、 など';
   const notePlaceholder = taste === 'ossan' ? '家族共有、年払い、見直し候補とか' : '家族共有、年払い、見直し候補など';
+  const amountLimitError = taste === 'ossan' ? '金額は100万円以下で入力してや。' : '金額は100万円以下で入力してください。';
+  const submitError =
+    taste === 'ossan'
+      ? '保存でけへんかった。すまんけどもういっぺん試してや。'
+      : '保存できませんでした。時間を空けてもう一度お試しください。';
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const amount = Number(amountYen);
     if (!name.trim() || !Number.isFinite(amount) || amount <= 0) return;
     if (amount > MAX_AMOUNT_YEN) {
-      setError('金額は100万円以下で入力してください。');
+      setError(amountLimitError);
       return;
     }
 
@@ -79,7 +84,7 @@ export function SubscriptionForm({ initialValues, onSubmit, onCancel, submitLabe
       if (err instanceof ApiError) {
         setError(err.message);
       } else {
-        setError('保存でけへんかった。もういっぺん試してや。');
+        setError(submitError);
       }
       setIsSubmitting(false);
     }
