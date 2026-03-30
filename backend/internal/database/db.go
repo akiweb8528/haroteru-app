@@ -1,14 +1,16 @@
 package database
 
 import (
+	"errors"
 	"embed"
 	"fmt"
 	"net/url"
 	"strings"
 
 	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/postgres"
+	_ "github.com/golang-migrate/migrate/v4/database/pgx/v5"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
+	"github.com/hashicorp/go-multierror"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 	"gorm.io/gorm/logger"
@@ -44,7 +46,7 @@ func Connect(databaseURL string) (*gorm.DB, error) {
 
 // RunMigrations applies all pending up-migrations embedded in the binary.
 func RunMigrations(databaseURL string) error {
-	databaseURL = normalizeDatabaseURL(databaseURL)
+	databaseURL = normalizeMigrationDatabaseURL(databaseURL)
 
 	src, err := iofs.New(migrationsFS, "migrations")
 	if err != nil {
@@ -57,7 +59,7 @@ func RunMigrations(databaseURL string) error {
 	}
 	defer m.Close()
 
-	if err := m.Up(); err != nil && err != migrate.ErrNoChange {
+	if err := m.Up(); err != nil && !isIgnorableMigrationError(err) {
 		return fmt.Errorf("running migrations: %w", err)
 	}
 
@@ -79,17 +81,76 @@ func normalizeDatabaseURL(rawURL string) string {
 		return rawURL
 	}
 
-	if !isPostgresScheme(parsedURL.Scheme) || !isNeonHost(parsedURL.Hostname()) {
+	if !isPostgresScheme(parsedURL.Scheme) {
 		return rawURL
 	}
 
-	query := parsedURL.Query()
-	if query.Get("sslmode") == "" {
-		query.Set("sslmode", "require")
-	}
-	parsedURL.RawQuery = query.Encode()
+	parsedURL.RawQuery = normalizePostgresQuery(parsedURL, false).Encode()
 
 	return parsedURL.String()
+}
+
+func normalizeMigrationDatabaseURL(rawURL string) string {
+	parsedURL, err := url.Parse(rawURL)
+	if err != nil {
+		return rawURL
+	}
+
+	if !isPostgresScheme(parsedURL.Scheme) {
+		return rawURL
+	}
+
+	parsedURL.Scheme = "pgx5"
+	parsedURL.RawQuery = normalizePostgresQuery(parsedURL, true).Encode()
+
+	return parsedURL.String()
+}
+
+func normalizePostgresQuery(parsedURL *url.URL, forMigrations bool) url.Values {
+	query := parsedURL.Query()
+
+	if isNeonHost(parsedURL.Hostname()) && query.Get("sslmode") == "" {
+		query.Set("sslmode", "require")
+	}
+
+	if forMigrations && query.Get("default_query_exec_mode") == "" {
+		query.Set("default_query_exec_mode", "simple_protocol")
+	}
+
+	return query
+}
+
+func isIgnorableMigrationError(err error) bool {
+	if err == nil {
+		return true
+	}
+
+	var multiErr *multierror.Error
+	if errors.As(err, &multiErr) {
+		for _, wrappedErr := range multiErr.Errors {
+			if wrappedErr == nil || errors.Is(wrappedErr, migrate.ErrNoChange) {
+				continue
+			}
+
+			if !isIgnorableAdvisoryUnlockError(wrappedErr) {
+				return false
+			}
+		}
+
+		return true
+	}
+
+	return errors.Is(err, migrate.ErrNoChange)
+}
+
+func isIgnorableAdvisoryUnlockError(err error) bool {
+	if err == nil {
+		return false
+	}
+
+	message := err.Error()
+	return strings.Contains(message, "SELECT pg_advisory_unlock($1)") &&
+		strings.Contains(message, "unnamed prepared statement does not exist")
 }
 
 func isPostgresScheme(scheme string) bool {
