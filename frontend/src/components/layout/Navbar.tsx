@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import { BrandLogo } from '@/components/layout/BrandLogo';
 import { usePreferences } from '@/providers/PreferencesProvider';
 
 interface Props {
@@ -37,9 +38,7 @@ export function Navbar({ user }: Props) {
     <nav className="sticky top-0 z-40 border-b border-gray-200 bg-white/95 backdrop-blur dark:border-gray-700 dark:bg-gray-900/95">
       <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
         <Link href="/subscriptions" className="flex items-center gap-2 font-bold text-gray-900 dark:text-gray-100">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white">
-            ¥
-          </div>
+          <BrandLogo />
           サブスク払ろてる
         </Link>
 
