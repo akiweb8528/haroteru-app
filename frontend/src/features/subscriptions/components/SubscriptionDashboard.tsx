@@ -121,7 +121,9 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
                 {detailToggleLabel}
               </button>
             </p>
-            <p className="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">{card.value}</p>
+            <p className="mt-2 break-all text-[clamp(1.125rem,5vw,1.5rem)] font-semibold leading-tight text-gray-900 dark:text-white">
+              {card.value}
+            </p>
           </div>
         ))}
       </div>
