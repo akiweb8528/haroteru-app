@@ -9,4 +9,4 @@
 - `haroteru-product`
   - プロダクトの目的、用語、UI コピーの前提、非表示にしている課金機能の扱い
 - `haroteru-fullstack-delivery`
-  - Next.js + Go の責務分離、どこに何を実装するか、変更時の判断基準
+  - Next.js + Go の責務分離、どこに何を実装するか、変更時の判断基準と最小限のセキュリティ確認手順
