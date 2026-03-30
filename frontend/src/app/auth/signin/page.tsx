@@ -3,6 +3,7 @@ import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { DEV_AUTH_NETWORK_ERROR, resolveDevAuthErrorMessage } from '@/lib/auth-errors';
+import { sanitizeCallbackUrl } from '@/lib/utils';
 import { SignInButton } from '@/components/auth/SignInButton';
 import { DevSignInForm } from '@/components/auth/DevSignInForm';
 
@@ -25,7 +26,8 @@ const errorMessages: Record<string, string> = {
 
 export default async function SignInPage({ searchParams }: Props) {
   const session = await getServerSession(authOptions);
-  if (session && !session.error) redirect(searchParams.callbackUrl || '/subscriptions');
+  const callbackUrl = sanitizeCallbackUrl(searchParams.callbackUrl);
+  if (session && !session.error) redirect(callbackUrl);
 
   const errorMessage = searchParams.error
     ? (errorMessages[searchParams.error] ?? errorMessages.default)
@@ -55,7 +57,7 @@ export default async function SignInPage({ searchParams }: Props) {
             </div>
           )}
 
-          <SignInButton callbackUrl={searchParams.callbackUrl} />
+          <SignInButton callbackUrl={callbackUrl} />
 
           {devAuthEnabled && (
             <>
@@ -64,7 +66,7 @@ export default async function SignInPage({ searchParams }: Props) {
                 検証用
                 <div className="h-px flex-1 bg-gray-200 dark:bg-gray-800" />
               </div>
-              <DevSignInForm callbackUrl={searchParams.callbackUrl} />
+              <DevSignInForm callbackUrl={callbackUrl} />
             </>
           )}
         </div>
