@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import Link from 'next/link';
 import { authOptions } from '@/lib/auth';
 import { SignInButton } from '@/components/auth/SignInButton';
+import { BrandLogo } from '@/components/layout/BrandLogo';
 import { GuestLandingHero } from '@/features/subscriptions/components/GuestLandingHero';
 import { SubscriptionDashboard } from '@/features/subscriptions/components/SubscriptionDashboard';
 
@@ -17,7 +18,7 @@ export default async function LandingPage() {
       <nav className="border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950">
         <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
           <div className="flex items-center gap-2 font-bold text-gray-900 dark:text-white">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600 text-white">¥</div>
+            <BrandLogo />
             サブスク払ろてる
           </div>
           <div className="flex items-center gap-3">

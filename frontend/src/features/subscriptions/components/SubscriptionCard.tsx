@@ -209,13 +209,13 @@ export function SubscriptionCard({
           </div>
         </div>
 
-        <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
-          {subscription.category && (
+        {subscription.category && (
+          <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
             <span className="rounded-full bg-gray-100 px-2.5 py-1 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
               {categoryLabels[subscription.category]}
             </span>
-          )}
-        </div>
+          </div>
+        )}
 
         {subscription.note && (
           <div className="mt-4">
