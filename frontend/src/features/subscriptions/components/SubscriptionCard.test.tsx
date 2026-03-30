@@ -38,13 +38,12 @@ describe('SubscriptionCard', () => {
     vi.clearAllMocks();
   });
 
-  it('サービス名・金額・カテゴリ・優先度を表示する', () => {
+  it('サービス名・金額・カテゴリを表示する', () => {
     render(<SubscriptionCard subscription={baseSubscription} onUpdate={onUpdate} onDelete={onDelete} />);
 
     expect(screen.getByText('Netflix')).toBeInTheDocument();
     expect(screen.getByText(/1,490/)).toBeInTheDocument(); // 金額（円記号は環境依存なので数字で確認）
     expect(screen.getByText('動画')).toBeInTheDocument();
-    expect(screen.getByText('ふつう')).toBeInTheDocument();
     // 「¥1,490 / 月額」は同一 <p> 内にテキストノードが混在するため部分一致で確認
     expect(screen.getByText(/月額/)).toBeInTheDocument();
   });
@@ -97,15 +96,15 @@ describe('SubscriptionCard', () => {
     expect(screen.getByText(longNote)).toBeInTheDocument();
   });
 
-  it('billingDay がある場合に引き落とし日を表示する', () => {
+  it('カテゴリ未設定のときカテゴリバッジを表示しない', () => {
     render(
       <SubscriptionCard
-        subscription={{ ...baseSubscription, billingDay: 15 }}
+        subscription={{ ...baseSubscription, category: undefined }}
         onUpdate={onUpdate}
         onDelete={onDelete}
       />,
     );
-    expect(screen.getByText(/15/)).toBeInTheDocument();
+    expect(screen.queryByText('動画')).not.toBeInTheDocument();
   });
 
   it('鍵ボタンを押すとロック状態を即時更新する', async () => {

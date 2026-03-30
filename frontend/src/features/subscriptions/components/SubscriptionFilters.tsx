@@ -13,7 +13,7 @@ export function SubscriptionFilters({ filters, onChange }: Props) {
 
   return (
     <div className="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
-      <div className="grid gap-3 md:grid-cols-[1fr_auto_auto_auto]">
+      <div className="grid gap-3 md:grid-cols-[1fr_auto_auto]">
         <input
           type="text"
           placeholder="サービス名やメモで検索"
@@ -26,13 +26,6 @@ export function SubscriptionFilters({ filters, onChange }: Props) {
           <option value="">支払い頻度すべて</option>
           <option value="monthly">月額</option>
           <option value="yearly">年額</option>
-        </select>
-
-        <select value={filters.reviewPriority || ''} onChange={(e) => setPartial({ reviewPriority: e.target.value || undefined })} className="rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-brand-400 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100">
-          <option value="">優先度すべて</option>
-          <option value="low">見直し候補</option>
-          <option value="medium">ふつう</option>
-          <option value="high">優先度高め</option>
         </select>
 
         <select value={filters.sort || 'position'} onChange={(e) => setPartial({ sort: e.target.value, order: e.target.value === 'amount_yen' ? 'desc' : 'asc' })} className="rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-brand-400 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100">
