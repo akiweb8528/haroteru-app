@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   cn,
   formatCurrency,
+  sanitizeCallbackUrl,
   resolveServiceBaseUrl,
 } from './utils';
 
@@ -56,5 +57,27 @@ describe('resolveServiceBaseUrl', () => {
 
   it('Render 内部ネットワークの host:port に http を補う', () => {
     expect(resolveServiceBaseUrl('haroteru-api:10000', 'http://localhost:8080')).toBe('http://haroteru-api:10000');
+  });
+});
+
+describe('sanitizeCallbackUrl', () => {
+  it('未設定時は fallback を返す', () => {
+    expect(sanitizeCallbackUrl(undefined, '/subscriptions')).toBe('/subscriptions');
+  });
+
+  it('アプリ内パスはそのまま通す', () => {
+    expect(sanitizeCallbackUrl('/settings?tab=profile#avatar')).toBe('/settings?tab=profile#avatar');
+  });
+
+  it('外部 URL は拒否する', () => {
+    expect(sanitizeCallbackUrl('https://evil.example.com/phish')).toBe('/subscriptions');
+  });
+
+  it('protocol-relative URL は拒否する', () => {
+    expect(sanitizeCallbackUrl('//evil.example.com/phish')).toBe('/subscriptions');
+  });
+
+  it('バックスラッシュを含む値は拒否する', () => {
+    expect(sanitizeCallbackUrl('/\\evil')).toBe('/subscriptions');
   });
 });
