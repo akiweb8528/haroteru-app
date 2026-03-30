@@ -109,6 +109,7 @@ export function useLocalSubscriptions(params: SubscriptionListParams = {}) {
       updated = {
         ...item,
         ...input,
+        category: input.clearCategory ? undefined : input.category !== undefined ? input.category : item.category,
         billingDay: input.clearBillingDay ? undefined : input.billingDay !== undefined ? input.billingDay : item.billingDay,
         note: input.note !== undefined ? input.note : item.note,
         updatedAt: new Date().toISOString(),

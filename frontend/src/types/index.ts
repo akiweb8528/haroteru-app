@@ -44,7 +44,7 @@ export interface TrackedSubscription {
   name: string;
   amountYen: number;
   billingCycle: BillingCycle;
-  category: SubscriptionCategory;
+  category?: SubscriptionCategory;
   reviewPriority: ReviewPriority;
   locked: boolean;
   billingDay?: number;
@@ -71,7 +71,7 @@ export interface CreateTrackedSubscriptionInput {
   name: string;
   amountYen: number;
   billingCycle: BillingCycle;
-  category: SubscriptionCategory;
+  category?: SubscriptionCategory;
   reviewPriority: ReviewPriority;
   locked?: boolean;
   billingDay?: number;
@@ -83,6 +83,7 @@ export interface UpdateTrackedSubscriptionInput {
   amountYen?: number;
   billingCycle?: BillingCycle;
   category?: SubscriptionCategory;
+  clearCategory?: boolean;
   reviewPriority?: ReviewPriority;
   locked?: boolean;
   billingDay?: number;

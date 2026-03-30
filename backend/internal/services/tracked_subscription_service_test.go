@@ -235,6 +235,7 @@ func TestDelete_PropagatesRepoError(t *testing.T) {
 
 func TestCreate_MapsInputFieldsToModel(t *testing.T) {
 	var created *models.TrackedSubscription
+	category := models.CategoryVideo
 	svc := newTestService(&mockSubscriptionRepo{
 		createFn: func(item *models.TrackedSubscription) error {
 			created = item
@@ -246,7 +247,7 @@ func TestCreate_MapsInputFieldsToModel(t *testing.T) {
 		Name:           "YouTube Premium",
 		AmountYen:      1280,
 		BillingCycle:   models.BillingCycleMonthly,
-		Category:       models.CategoryVideo,
+		Category:       &category,
 		ReviewPriority: models.PriorityMedium,
 		Locked:         true,
 		Note:           "家族プラン",
