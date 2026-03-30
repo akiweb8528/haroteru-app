@@ -96,7 +96,7 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
   }, [isGuest]);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8 pb-28">
+    <div className="mx-auto max-w-5xl px-4 py-8">
       <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-sm font-medium text-brand-600">{dashboardCopy.eyebrow}</p>
@@ -184,16 +184,14 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
         canReorder={canReorder}
       />
 
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-gray-200/80 bg-white/95 px-4 py-3 backdrop-blur dark:border-gray-700/80 dark:bg-gray-950/95">
-        <div className="mx-auto max-w-5xl">
-          <button
-            type="button"
-            onClick={() => setShowForm(true)}
-            className="w-full rounded-2xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-700"
-          >
-            サブスクを追加
-          </button>
-        </div>
+      <div className="mt-6">
+        <button
+          type="button"
+          onClick={() => setShowForm(true)}
+          className="w-full rounded-2xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-700"
+        >
+          サブスクを追加
+        </button>
       </div>
     </div>
   );
