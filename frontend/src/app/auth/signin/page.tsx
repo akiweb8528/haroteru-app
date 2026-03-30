@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
+import { DEV_AUTH_NETWORK_ERROR, resolveDevAuthErrorMessage } from '@/lib/auth-errors';
 import { SignInButton } from '@/components/auth/SignInButton';
 import { DevSignInForm } from '@/components/auth/DevSignInForm';
 
@@ -16,7 +17,8 @@ const errorMessages: Record<string, string> = {
   OAuthCallback: 'Googleサインインが途中で止まってもた。もういっぺん試してや。',
   OAuthAccountNotLinked: 'そのメアドはもう別のアカウントにくっついとるで。',
   BackendAuthError: 'サーバーにつながらへんかった。ちょい待ってからもういっぺん試してや。',
-  CredentialsSignin: '検証用サインインに失敗しました。コードを確認してください。',
+  CredentialsSignin: resolveDevAuthErrorMessage('CredentialsSignin'),
+  [DEV_AUTH_NETWORK_ERROR]: resolveDevAuthErrorMessage(DEV_AUTH_NETWORK_ERROR),
   SessionExpired: 'セッションが切れてもた。もういっぺんサインインしてや。',
   default: 'えらいこっちゃ、なんかこけた。もういっぺん試してや。',
 };
