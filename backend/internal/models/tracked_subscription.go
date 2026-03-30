@@ -32,7 +32,7 @@ type TrackedSubscription struct {
 	Name          string               `gorm:"not null"                                     json:"name"`
 	AmountYen     int                  `gorm:"column:amount_yen;not null"                   json:"amountYen"`
 	BillingCycle  BillingCycle         `gorm:"column:billing_cycle;type:billing_cycle;not null;default:'monthly'" json:"billingCycle"`
-	Category      SubscriptionCategory `gorm:"type:subscription_category;not null;default:'other'"              json:"category"`
+	Category      *SubscriptionCategory `gorm:"type:subscription_category"                                json:"category,omitempty"`
 	ReviewPriority ReviewPriority      `gorm:"column:review_priority;type:review_priority;not null;default:'medium'" json:"reviewPriority"`
 	Locked        bool                 `gorm:"not null;default:false"                       json:"locked"`
 	BillingDay    *int                 `gorm:"column:billing_day"                           json:"billingDay,omitempty"`

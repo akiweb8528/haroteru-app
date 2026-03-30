@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import type { TrackedSubscription, UpdateTrackedSubscriptionInput } from '@/types';
-import { billingCycleLabels, categoryLabels, formatCurrency, reviewPriorityColors, reviewPriorityLabels, cn } from '@/lib/utils';
+import { billingCycleLabels, categoryLabels, formatCurrency, cn } from '@/lib/utils';
 import { SubscriptionForm } from '@/features/subscriptions/components/SubscriptionForm';
 import { usePreferences } from '@/providers/PreferencesProvider';
 
@@ -210,9 +210,11 @@ export function SubscriptionCard({
         </div>
 
         <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
-          <span className="rounded-full bg-gray-100 px-2.5 py-1 text-gray-700 dark:bg-gray-800 dark:text-gray-300">{categoryLabels[subscription.category]}</span>
-          <span className={cn('rounded-full px-2.5 py-1', reviewPriorityColors[subscription.reviewPriority])}>{reviewPriorityLabels[subscription.reviewPriority]}</span>
-          {subscription.billingDay && <span className="rounded-full bg-gray-100 px-2.5 py-1 text-gray-700 dark:bg-gray-800 dark:text-gray-300">毎月 {subscription.billingDay} 日前後</span>}
+          {subscription.category && (
+            <span className="rounded-full bg-gray-100 px-2.5 py-1 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
+              {categoryLabels[subscription.category]}
+            </span>
+          )}
         </div>
 
         {subscription.note && (
