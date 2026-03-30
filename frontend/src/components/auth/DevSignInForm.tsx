@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
+import { DEV_AUTH_NETWORK_ERROR, resolveDevAuthErrorMessage } from '@/lib/auth-errors';
 
 interface Props {
   callbackUrl?: string;
@@ -22,19 +23,24 @@ export function DevSignInForm({ callbackUrl = '/subscriptions' }: Props) {
     setIsSubmitting(true);
     setError(null);
 
-    const result = await signIn('dev', {
-      callbackUrl,
-      redirect: false,
-      verificationCode: verificationCode.trim(),
-    });
+    try {
+      const result = await signIn('dev', {
+        callbackUrl,
+        redirect: false,
+        verificationCode: verificationCode.trim(),
+      });
 
-    if (result?.error) {
-      setError('検証用サインインに失敗しました。コードを確認してください。');
+      if (result?.error || !result?.url) {
+        setError(resolveDevAuthErrorMessage(result?.error));
+        setIsSubmitting(false);
+        return;
+      }
+
+      window.location.href = result.url;
+    } catch {
+      setError(resolveDevAuthErrorMessage(DEV_AUTH_NETWORK_ERROR));
       setIsSubmitting(false);
-      return;
     }
-
-    window.location.href = result?.url ?? callbackUrl;
   };
 
   return (
