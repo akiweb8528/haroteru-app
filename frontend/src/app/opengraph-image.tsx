@@ -101,9 +101,8 @@ export default function OpenGraphImage() {
               }}
             >
               {[
-                { label: '月額合計', value: '¥8,230' },
-                { label: '年額合計', value: '¥98,760' },
-                { label: '見直し候補', value: '3件' },
+                { label: '月', value: '¥8,230' },
+                { label: '年', value: '¥98,760' },
               ].map((item) => (
                 <div
                   key={item.label}
