@@ -42,7 +42,7 @@ type CreateTrackedSubscriptionInput struct {
 	Name           string                       `json:"name" validate:"required,min=1,max=50"`
 	AmountYen      int                          `json:"amountYen" validate:"required,min=1,max=1000000"`
 	BillingCycle   models.BillingCycle         `json:"billingCycle" validate:"required,oneof=monthly yearly"`
-	Category       models.SubscriptionCategory `json:"category" validate:"required,oneof=video music productivity learning shopping lifestyle utilities other"`
+	Category       *models.SubscriptionCategory `json:"category" validate:"omitempty,oneof=video music productivity learning shopping lifestyle utilities"`
 	ReviewPriority models.ReviewPriority       `json:"reviewPriority" validate:"required,oneof=low medium high"`
 	Locked         bool                         `json:"locked"`
 	BillingDay     *int                         `json:"billingDay" validate:"omitempty,min=1,max=31"`
@@ -53,7 +53,8 @@ type UpdateTrackedSubscriptionInput struct {
 	Name           *string                      `json:"name" validate:"omitempty,min=1,max=50"`
 	AmountYen      *int                         `json:"amountYen" validate:"omitempty,min=1,max=1000000"`
 	BillingCycle   *models.BillingCycle        `json:"billingCycle" validate:"omitempty,oneof=monthly yearly"`
-	Category       *models.SubscriptionCategory `json:"category" validate:"omitempty,oneof=video music productivity learning shopping lifestyle utilities other"`
+	Category       *models.SubscriptionCategory `json:"category" validate:"omitempty,oneof=video music productivity learning shopping lifestyle utilities"`
+	ClearCategory  bool                         `json:"clearCategory"`
 	ReviewPriority *models.ReviewPriority      `json:"reviewPriority" validate:"omitempty,oneof=low medium high"`
 	Locked         *bool                        `json:"locked"`
 	BillingDay     *int                         `json:"billingDay" validate:"omitempty,min=1,max=31"`
@@ -132,6 +133,8 @@ func (s *TrackedSubscriptionService) Update(id, userID string, input *UpdateTrac
 	}
 	if input.Category != nil {
 		fields["category"] = *input.Category
+	} else if input.ClearCategory {
+		fields["category"] = nil
 	}
 	if input.ReviewPriority != nil {
 		fields["review_priority"] = *input.ReviewPriority

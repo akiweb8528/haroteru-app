@@ -70,6 +70,9 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
   const migrationRetryText = taste === 'simple'
     ? 'まだ同期しきれていないサブスクがこの端末に残っています。もう一回同期を試してください。'
     : 'まだ同期しきれてへんサブスクがこの端末に残っとるで。すまんけど、もう一回同期を試してや。';
+  const detailToggleLabel = showApprox
+    ? (taste === 'simple' ? '正確にする' : '細かくするで')
+    : (taste === 'simple' ? '概算にする' : '雑にするで');
 
   const fmtAmount = (n: number) => showApprox ? formatApprox(n) : formatCurrency(n);
 
@@ -93,7 +96,7 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
   }, [isGuest]);
 
   return (
-    <div className="mx-auto max-w-5xl px-4 py-8">
+    <div className="mx-auto max-w-5xl px-4 py-8 pb-28">
       <div className="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
         <div>
           <p className="text-sm font-medium text-brand-600">{dashboardCopy.eyebrow}</p>
@@ -105,8 +108,8 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
 
       <div className="mb-6 grid gap-3 grid-cols-2">
         {[
-          { label: '月額合計', value: fmtAmount(summary?.monthlyEstimate ?? 0) },
-          { label: '年額合計', value: fmtAmount(summary?.yearlyEstimate ?? 0) },
+          { label: '月', value: fmtAmount(summary?.monthlyEstimate ?? 0) },
+          { label: '年', value: fmtAmount(summary?.yearlyEstimate ?? 0) },
         ].map((card) => (
           <div key={card.label} className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
             <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -115,10 +118,12 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
                 onClick={() => setShowApprox((v) => !v)}
                 className="inline-flex items-center gap-1.5 rounded-full border border-gray-200 bg-white ml-2 px-3 py-1 text-xs font-medium text-gray-500 transition hover:border-gray-300 hover:text-gray-700 dark:border-gray-700 dark:bg-gray-900 dark:text-gray-400 dark:hover:border-gray-600 dark:hover:text-gray-200"
               >
-                {showApprox ? '正確にする' : '概算にする'}
+                {detailToggleLabel}
               </button>
             </p>
-            <p className="mt-2 text-2xl font-semibold text-gray-900 dark:text-white">{card.value}</p>
+            <p className="mt-2 break-all text-[clamp(1.125rem,5vw,1.5rem)] font-semibold leading-tight text-gray-900 dark:text-white">
+              {card.value}
+            </p>
           </div>
         ))}
       </div>
@@ -178,6 +183,18 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
         onReorder={reorder}
         canReorder={canReorder}
       />
+
+      <div className="fixed inset-x-0 bottom-0 z-30 border-t border-gray-200/80 bg-white/95 px-4 py-3 backdrop-blur dark:border-gray-700/80 dark:bg-gray-950/95">
+        <div className="mx-auto max-w-5xl">
+          <button
+            type="button"
+            onClick={() => setShowForm(true)}
+            className="w-full rounded-2xl bg-brand-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-brand-700"
+          >
+            サブスクを追加
+          </button>
+        </div>
+      </div>
     </div>
   );
 }
