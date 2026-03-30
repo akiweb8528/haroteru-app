@@ -2,10 +2,12 @@ import type { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
 import type { JWT } from 'next-auth/jwt';
+import { DEV_AUTH_NETWORK_ERROR } from './auth-errors';
 import { resolveServiceBaseUrl } from './utils';
 
 const BACKEND_URL = resolveServiceBaseUrl(process.env.BACKEND_URL, 'http://localhost:8080');
 const DEV_AUTH_ENABLED = process.env.DEV_AUTH_ENABLED === 'true';
+const AUTH_REQUEST_TIMEOUT_MS = 10_000;
 
 type BackendAuthUser = {
   id: string;
@@ -24,6 +26,20 @@ type DevCredentialsUser = {
   backendAccessToken: string;
   backendRefreshToken: string;
 };
+
+async function fetchWithTimeout(input: string, init: RequestInit = {}, timeoutMs = AUTH_REQUEST_TIMEOUT_MS) {
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+
+  try {
+    return await fetch(input, {
+      ...init,
+      signal: controller.signal,
+    });
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -54,13 +70,23 @@ export const authOptions: NextAuthOptions = {
                 return null;
               }
 
-              const res = await fetch(`${BACKEND_URL}/api/v1/auth/dev`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ code: verificationCode }),
-              });
+              let res: Response;
+              try {
+                res = await fetchWithTimeout(`${BACKEND_URL}/api/v1/auth/dev`, {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({ code: verificationCode }),
+                });
+              } catch {
+                throw new Error(DEV_AUTH_NETWORK_ERROR);
+              }
+
               if (!res.ok) {
-                return null;
+                if (res.status === 401) {
+                  return null;
+                }
+
+                throw new Error(DEV_AUTH_NETWORK_ERROR);
               }
 
               const data = await res.json() as {
@@ -87,7 +113,7 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, account, user }) {
       if (account?.id_token) {
         try {
-          const res = await fetch(`${BACKEND_URL}/api/v1/auth/google`, {
+          const res = await fetchWithTimeout(`${BACKEND_URL}/api/v1/auth/google`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id_token: account.id_token }),
@@ -158,7 +184,7 @@ export const authOptions: NextAuthOptions = {
 
 async function refreshAccessToken(token: JWT): Promise<JWT> {
   try {
-    const res = await fetch(`${BACKEND_URL}/api/v1/auth/refresh`, {
+    const res = await fetchWithTimeout(`${BACKEND_URL}/api/v1/auth/refresh`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refresh_token: token.backendRefreshToken }),
