@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"path/filepath"
 	"syscall"
 	"time"
 
@@ -25,7 +26,7 @@ import (
 )
 
 func main() {
-	_ = godotenv.Load()
+	loadEnv()
 
 	cfg := config.Load()
 
@@ -96,6 +97,20 @@ func main() {
 		logger.Error("graceful shutdown error", zap.Error(err))
 	}
 	logger.Info("server stopped")
+}
+
+func loadEnv() {
+	candidates := []string{
+		".env",
+		"../.env",
+		filepath.Join("..", "..", ".env"),
+	}
+
+	for _, candidate := range candidates {
+		if _, err := os.Stat(candidate); err == nil {
+			_ = godotenv.Load(candidate)
+		}
+	}
 }
 
 func newLogger(production bool) (*zap.Logger, error) {
