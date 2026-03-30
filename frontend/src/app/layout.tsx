@@ -36,6 +36,7 @@ function resolveSiteUrl() {
 const siteUrl = resolveSiteUrl();
 const googleAnalyticsId = process.env.NEXT_PUBLIC_GA_MEASUREMENT_ID?.trim();
 const analyticsEnvironment = process.env.NEXT_PUBLIC_APP_ENV?.trim();
+const themeInitScript = "try{if(localStorage.getItem('theme')==='dark')document.documentElement.classList.add('dark')}catch(e){}";
 
 export const metadata: Metadata = {
   metadataBase: siteUrl,
@@ -72,13 +73,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
   const session = await getServerSession(authOptions);
 
   return (
-    <html lang="ja" className="h-full">
+    <html lang="ja" className="h-full" suppressHydrationWarning>
       <head>
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `try{if(localStorage.getItem('theme')==='dark')document.documentElement.classList.add('dark')}catch(e){}`,
-          }}
-        />
+        <Script id="theme-init" strategy="beforeInteractive">
+          {themeInitScript}
+        </Script>
         {googleAnalyticsId && (
           <>
             <Script
