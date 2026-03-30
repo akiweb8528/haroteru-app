@@ -1,8 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { BillingCycle, CreateTrackedSubscriptionInput, ReviewPriority, SubscriptionCategory, UpdateTrackedSubscriptionInput } from '@/types';
-import { cn } from '@/lib/utils';
+import type { BillingCycle, CreateTrackedSubscriptionInput, SubscriptionCategory, UpdateTrackedSubscriptionInput } from '@/types';
 import { ApiError } from '@/shared/api/http-client';
 import { usePreferences } from '@/providers/PreferencesProvider';
 
@@ -23,13 +22,6 @@ const categories: { value: SubscriptionCategory; label: string }[] = [
   { value: 'shopping', label: '買い物' },
   { value: 'lifestyle', label: '生活' },
   { value: 'utilities', label: 'インフラ' },
-  { value: 'other', label: 'その他' },
-];
-
-const priorities: { value: ReviewPriority; label: string }[] = [
-  { value: 'low', label: '見直し候補' },
-  { value: 'medium', label: 'ふつう' },
-  { value: 'high', label: '優先度高め' },
 ];
 
 const MAX_AMOUNT_YEN = 1_000_000;
@@ -38,13 +30,12 @@ const MAX_NOTE_LENGTH = 500;
 
 export function SubscriptionForm({ initialValues, onSubmit, onCancel, submitLabel = 'サブスクを追加' }: Props) {
   const { taste } = usePreferences();
+  const isEditing = initialValues !== undefined;
   const [name, setName] = useState(initialValues?.name ?? '');
   const [amountYen, setAmountYen] = useState(String(initialValues?.amountYen ?? ''));
   const [billingCycle, setBillingCycle] = useState<BillingCycle>(initialValues?.billingCycle ?? 'monthly');
-  const [category, setCategory] = useState<SubscriptionCategory>(initialValues?.category ?? 'other');
-  const [reviewPriority, setReviewPriority] = useState<ReviewPriority>(initialValues?.reviewPriority ?? 'medium');
+  const [category, setCategory] = useState<SubscriptionCategory | ''>(initialValues?.category ?? '');
   const locked = initialValues?.locked ?? false;
-  const [billingDay, setBillingDay] = useState(initialValues?.billingDay ? String(initialValues.billingDay) : '');
   const [note, setNote] = useState(initialValues?.note ?? '');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,11 +64,12 @@ export function SubscriptionForm({ initialValues, onSubmit, onCancel, submitLabe
         name: name.trim(),
         amountYen: amount,
         billingCycle,
-        category,
-        reviewPriority,
+        category: category || undefined,
+        clearCategory: isEditing && !category && initialValues?.category !== undefined,
+        reviewPriority: initialValues?.reviewPriority ?? 'medium',
         locked,
-        billingDay: billingDay ? Number(billingDay) : undefined,
-        clearBillingDay: !billingDay && initialValues?.billingDay !== undefined,
+        billingDay: initialValues?.billingDay,
+        clearBillingDay: false,
         note: note.trim(),
       });
     } catch (err) {
@@ -97,17 +89,17 @@ export function SubscriptionForm({ initialValues, onSubmit, onCancel, submitLabe
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block">
           <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">サービス名</span>
-          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={MAX_NAME_LENGTH} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-brand-400 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" placeholder={servicePlaceholder} />
+          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={MAX_NAME_LENGTH} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-base focus:border-brand-400 focus:outline-none sm:text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" placeholder={servicePlaceholder} />
         </label>
 
         <label className="block">
           <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">金額</span>
-          <input type="number" min={1} max={MAX_AMOUNT_YEN} value={amountYen} onChange={(e) => setAmountYen(e.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-brand-400 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" placeholder="980" />
+          <input type="number" min={1} max={MAX_AMOUNT_YEN} value={amountYen} onChange={(e) => setAmountYen(e.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-base focus:border-brand-400 focus:outline-none sm:text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" placeholder="980" />
         </label>
 
         <label className="block">
           <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">支払い頻度</span>
-          <select value={billingCycle} onChange={(e) => setBillingCycle(e.target.value as BillingCycle)} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-brand-400 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100">
+          <select value={billingCycle} onChange={(e) => setBillingCycle(e.target.value as BillingCycle)} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-base focus:border-brand-400 focus:outline-none sm:text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100">
             <option value="monthly">月額</option>
             <option value="yearly">年額</option>
           </select>
@@ -115,31 +107,16 @@ export function SubscriptionForm({ initialValues, onSubmit, onCancel, submitLabe
 
         <label className="block">
           <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">カテゴリ</span>
-          <select value={category} onChange={(e) => setCategory(e.target.value as SubscriptionCategory)} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-brand-400 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100">
+          <select value={category} onChange={(e) => setCategory(e.target.value as SubscriptionCategory | '')} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-base focus:border-brand-400 focus:outline-none sm:text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100">
+            <option value="">未選択</option>
             {categories.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
           </select>
-        </label>
-
-        <label className="block">
-          <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">見直し優先度</span>
-          <div className="flex flex-wrap gap-2">
-            {priorities.map((item) => (
-              <button key={item.value} type="button" onClick={() => setReviewPriority(item.value)} className={cn('rounded-full px-3 py-1.5 text-xs font-medium transition', reviewPriority === item.value ? 'bg-brand-600 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200 dark:bg-gray-800 dark:text-gray-300 dark:hover:bg-gray-700')}>
-                {item.label}
-              </button>
-            ))}
-          </div>
-        </label>
-
-        <label className="block">
-          <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">支払い日</span>
-          <input type="number" min={1} max={31} value={billingDay} onChange={(e) => setBillingDay(e.target.value)} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-brand-400 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" placeholder="15" />
         </label>
       </div>
 
       <label className="mt-4 block">
         <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">メモ</span>
-        <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} maxLength={MAX_NOTE_LENGTH} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-sm focus:border-brand-400 focus:outline-none dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" placeholder={notePlaceholder} />
+        <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} maxLength={MAX_NOTE_LENGTH} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-base focus:border-brand-400 focus:outline-none sm:text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" placeholder={notePlaceholder} />
       </label>
 
       <div className="mt-5 flex justify-end gap-2">
