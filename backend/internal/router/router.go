@@ -19,6 +19,7 @@ func Setup(
 	users *handlers.UserHandler,
 	subscriptions *handlers.TrackedSubscriptionHandler,
 	frontendURL string,
+	production bool,
 ) {
 	e.Validator = customvalidator.New()
 	e.HideBanner = true
@@ -26,6 +27,7 @@ func Setup(
 
 	e.Use(echomw.RequestID())
 	e.Use(echomw.Recover())
+	e.Use(middleware.SecurityHeaders(production))
 	e.Use(middleware.CORS(frontendURL))
 	e.Use(echomw.LoggerWithConfig(echomw.LoggerConfig{
 		Format: `{"time":"${time_rfc3339}","id":"${id}","method":"${method}","uri":"${uri}","status":${status},"latency_ms":${latency_human}}` + "\n",
