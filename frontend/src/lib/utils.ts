@@ -27,6 +27,25 @@ export function resolveServiceBaseUrl(value: string | undefined, fallback: strin
   return `http://${withoutTrailingSlash}`;
 }
 
+export function sanitizeCallbackUrl(value: string | undefined, fallback = '/subscriptions'): string {
+  const candidate = value?.trim();
+  if (!candidate) {
+    return fallback;
+  }
+
+  // Only allow in-app relative paths and reject protocol-relative values.
+  if (!candidate.startsWith('/') || candidate.startsWith('//') || candidate.includes('\\')) {
+    return fallback;
+  }
+
+  try {
+    const url = new URL(candidate, 'http://localhost');
+    return `${url.pathname}${url.search}${url.hash}`;
+  } catch {
+    return fallback;
+  }
+}
+
 export const reviewPriorityLabels: Record<string, string> = {
   low: '見直し候補',
   medium: 'ふつう',
