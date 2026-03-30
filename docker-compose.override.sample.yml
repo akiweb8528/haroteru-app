@@ -14,6 +14,10 @@ services:
     environment:
       ENVIRONMENT: development
       AIR_WD: /app
+      DEV_AUTH_ENABLED: ${DEV_AUTH_ENABLED:-false}
+      DEV_AUTH_CODE: ${DEV_AUTH_CODE:-}
+      DEV_AUTH_EMAIL: ${DEV_AUTH_EMAIL:-dev-signin@haroteru.local}
+      DEV_AUTH_NAME: ${DEV_AUTH_NAME:-検証ユーザー}
     command: air -c .air.toml
 
   frontend:
@@ -27,6 +31,7 @@ services:
       - NODE_ENV=development
       - WATCHPACK_POLLING=true
       - CHOKIDAR_USEPOLLING=true
+      - DEV_AUTH_ENABLED=${DEV_AUTH_ENABLED:-false}
     command: npm run dev
 
 volumes:

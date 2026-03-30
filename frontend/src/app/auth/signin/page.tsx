@@ -2,7 +2,9 @@ import type { Metadata } from 'next';
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
+import { DEV_AUTH_NETWORK_ERROR, resolveDevAuthErrorMessage } from '@/lib/auth-errors';
 import { SignInButton } from '@/components/auth/SignInButton';
+import { DevSignInForm } from '@/components/auth/DevSignInForm';
 
 export const metadata: Metadata = { title: 'サインイン' };
 
@@ -15,6 +17,8 @@ const errorMessages: Record<string, string> = {
   OAuthCallback: 'Googleサインインが途中で止まってもた。もういっぺん試してや。',
   OAuthAccountNotLinked: 'そのメアドはもう別のアカウントにくっついとるで。',
   BackendAuthError: 'サーバーにつながらへんかった。ちょい待ってからもういっぺん試してや。',
+  CredentialsSignin: resolveDevAuthErrorMessage('CredentialsSignin'),
+  [DEV_AUTH_NETWORK_ERROR]: resolveDevAuthErrorMessage(DEV_AUTH_NETWORK_ERROR),
   SessionExpired: 'セッションが切れてもた。もういっぺんサインインしてや。',
   default: 'えらいこっちゃ、なんかこけた。もういっぺん試してや。',
 };
@@ -26,6 +30,7 @@ export default async function SignInPage({ searchParams }: Props) {
   const errorMessage = searchParams.error
     ? (errorMessages[searchParams.error] ?? errorMessages.default)
     : null;
+  const devAuthEnabled = process.env.DEV_AUTH_ENABLED === 'true';
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-950">
@@ -51,6 +56,17 @@ export default async function SignInPage({ searchParams }: Props) {
           )}
 
           <SignInButton callbackUrl={searchParams.callbackUrl} />
+
+          {devAuthEnabled && (
+            <>
+              <div className="my-5 flex items-center gap-3 text-xs text-gray-400 dark:text-gray-600">
+                <div className="h-px flex-1 bg-gray-200 dark:bg-gray-800" />
+                検証用
+                <div className="h-px flex-1 bg-gray-200 dark:bg-gray-800" />
+              </div>
+              <DevSignInForm callbackUrl={searchParams.callbackUrl} />
+            </>
+          )}
         </div>
       </div>
     </main>

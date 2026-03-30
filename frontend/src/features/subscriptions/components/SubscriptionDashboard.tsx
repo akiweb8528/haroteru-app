@@ -1,13 +1,18 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
-import { signIn } from 'next-auth/react';
+import { signIn, useSession } from 'next-auth/react';
 import { cn, formatCurrency } from '@/lib/utils';
 import type { SubscriptionListParams } from '@/features/subscriptions/api/subscription-client';
 import { SubscriptionFilters } from '@/features/subscriptions/components/SubscriptionFilters';
 import { SubscriptionForm } from '@/features/subscriptions/components/SubscriptionForm';
 import { SubscriptionList } from '@/features/subscriptions/components/SubscriptionList';
 import { useLocalSubscriptions } from '@/features/subscriptions/hooks/useLocalSubscriptions';
+import {
+  hasLocalSubscriptions,
+  LOCAL_SUBSCRIPTIONS_UPDATED_EVENT,
+  requestLocalSubscriptionsMigration,
+} from '@/features/subscriptions/lib/local-storage';
 import { useSubscriptions } from '@/features/subscriptions/hooks/useSubscriptions';
 import { usePreferences } from '@/providers/PreferencesProvider';
 
@@ -27,9 +32,11 @@ function formatApprox(n: number): string {
 }
 
 export function SubscriptionDashboard({ isGuest = false }: Props) {
+  const { status } = useSession();
   const [showForm, setShowForm] = useState(false);
   const [showApprox, setShowApprox] = useState(true);
   const [filters, setFilters] = useState<SubscriptionListParams>({ sort: 'position', order: 'asc' });
+  const [hasPendingLocalMigration, setHasPendingLocalMigration] = useState(false);
   const { taste } = usePreferences();
   const formRef = useRef<HTMLDivElement | null>(null);
 
@@ -38,6 +45,7 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
   const { subscriptions, meta, isLoading, error, create, update, remove, reorder } = isGuest ? localHook : serverHook;
   const summary = meta?.summary;
   const hasSubscriptions = subscriptions.length > 0;
+  const isMigrationLoading = !isGuest && status === 'authenticated' && hasPendingLocalMigration && !hasSubscriptions && !error;
   const canReorder = (filters.sort ?? 'position') === 'position' && (filters.order ?? 'asc') === 'asc';
   const dashboardCopy = isGuest || taste === 'ossan'
     ? {
@@ -53,6 +61,15 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
   const guestSyncCopy = taste === 'simple'
     ? '現在のデータはこの端末に保存されています。Googleで同期すると、別の端末でも同じ一覧を利用できます。'
     : '今のデータはこの端末だけに入っとるで。Googleで同期したら、別の端末でも同じ一覧が見られるんや。';
+  const reorderHelpText = taste === 'simple'
+    ? '並び替えは「登録順」のときだけ使えます。'
+    : '並び替えは「登録順」のときだけ使えるで。';
+  const migrationLoadingText = taste === 'simple'
+    ? 'ローカルに保存されていたサブスクを同期しています。少々お待ちください。'
+    : 'ローカルに保存しとったサブスクを同期しとるところやで。少し待ってな。';
+  const migrationRetryText = taste === 'simple'
+    ? 'まだ同期しきれていないサブスクがこの端末に残っています。もう一回同期を試してください。'
+    : 'まだ同期しきれてへんサブスクがこの端末に残っとるで。すまんけど、もう一回同期を試してや。';
 
   const fmtAmount = (n: number) => showApprox ? formatApprox(n) : formatCurrency(n);
 
@@ -60,6 +77,20 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
     if (!showForm) return;
     formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [showForm]);
+
+  useEffect(() => {
+    if (isGuest) return;
+
+    const syncPendingMigration = () => {
+      setHasPendingLocalMigration(hasLocalSubscriptions());
+    };
+
+    syncPendingMigration();
+    window.addEventListener(LOCAL_SUBSCRIPTIONS_UPDATED_EVENT, syncPendingMigration);
+    return () => {
+      window.removeEventListener(LOCAL_SUBSCRIPTIONS_UPDATED_EVENT, syncPendingMigration);
+    };
+  }, [isGuest]);
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8">
@@ -74,8 +105,8 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
 
       <div className="mb-6 grid gap-3 grid-cols-2">
         {[
-          { label: '月あたりの目安', value: fmtAmount(summary?.monthlyEstimate ?? 0) },
-          { label: '年あたりの目安', value: fmtAmount(summary?.yearlyEstimate ?? 0) },
+          { label: '月額合計', value: fmtAmount(summary?.monthlyEstimate ?? 0) },
+          { label: '年額合計', value: fmtAmount(summary?.yearlyEstimate ?? 0) },
         ].map((card) => (
           <div key={card.label} className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
             <p className="text-xs font-medium text-gray-500 dark:text-gray-400">
@@ -115,13 +146,32 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
 
       {!canReorder && (
         <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">
-          並び替えは「登録順」のときだけ使えるで。
+          {reorderHelpText}
         </p>
+      )}
+
+      {isMigrationLoading && (
+        <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-900/10 dark:text-amber-200">
+          {migrationLoadingText}
+        </div>
+      )}
+
+      {!isMigrationLoading && !isGuest && status === 'authenticated' && hasPendingLocalMigration && (
+        <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-900/10 dark:text-amber-200">
+          <p>{migrationRetryText}</p>
+          <button
+            type="button"
+            onClick={() => requestLocalSubscriptionsMigration()}
+            className="mt-2 font-semibold underline underline-offset-2"
+          >
+            同期を再試行する
+          </button>
+        </div>
       )}
 
       <SubscriptionList
         subscriptions={subscriptions}
-        isLoading={isLoading}
+        isLoading={isLoading || isMigrationLoading}
         error={error}
         onUpdate={update}
         onDelete={remove}
