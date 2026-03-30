@@ -48,7 +48,7 @@ function DeleteSubscriptionDialog({
             削除の確認
           </h2>
         </div>
-        <p className="mt-3 text-sm text-gray-600 dark:text-gray-300">
+        <p className="mt-3 break-all text-sm text-gray-600 dark:text-gray-300">
           <span className="font-medium text-gray-900 dark:text-gray-100">「{subscriptionName}」</span>{message}
         </p>
         <div className="mt-5 flex justify-end gap-2">
@@ -89,6 +89,8 @@ export function SubscriptionCard({
   const [isDeleting, setIsDeleting] = useState(false);
   const [isTogglingLock, setIsTogglingLock] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
+  const [isNoteExpanded, setIsNoteExpanded] = useState(false);
+  const hasLongNote = subscription.note.length > 120 || subscription.note.includes('\n');
 
   const handleDelete = async () => {
     setShowConfirm(false);
@@ -170,10 +172,10 @@ export function SubscriptionCard({
                 <path d="M7 4a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm0 6a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm-1.5 7.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3ZM16 4a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm0 6a1.5 1.5 0 1 1-3 0 1.5 1.5 0 0 1 3 0Zm-1.5 7.5a1.5 1.5 0 1 0 0-3 1.5 1.5 0 0 0 0 3Z" />
               </svg>
             </button>
-            <div>
-            <div className="flex items-center gap-2">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{subscription.name}</h3>
-              {subscription.locked && <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">ロック中</span>}
+            <div className="min-w-0">
+            <div className="flex items-start gap-2">
+              <h3 className="min-w-0 break-all text-lg font-semibold text-gray-900 dark:text-gray-100">{subscription.name}</h3>
+              {subscription.locked && <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">ロック中</span>}
             </div>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{formatCurrency(subscription.amountYen)} / {billingCycleLabels[subscription.billingCycle]}</p>
             </div>
@@ -213,7 +215,30 @@ export function SubscriptionCard({
           {subscription.billingDay && <span className="rounded-full bg-gray-100 px-2.5 py-1 text-gray-700 dark:bg-gray-800 dark:text-gray-300">毎月 {subscription.billingDay} 日前後</span>}
         </div>
 
-        {subscription.note && <p className="mt-4 text-sm leading-6 text-gray-600 dark:text-gray-300">{subscription.note}</p>}
+        {subscription.note && (
+          <div className="mt-4">
+            <p
+              className="whitespace-pre-wrap break-all text-sm leading-6 text-gray-600 dark:text-gray-300"
+              style={isNoteExpanded ? undefined : {
+                display: '-webkit-box',
+                WebkitBoxOrient: 'vertical',
+                WebkitLineClamp: 1,
+                overflow: 'hidden',
+              }}
+            >
+              {subscription.note}
+            </p>
+            {hasLongNote && (
+              <button
+                type="button"
+                onClick={() => setIsNoteExpanded((current) => !current)}
+                className="mt-2 text-sm font-medium text-brand-600 transition hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300"
+              >
+                {isNoteExpanded ? '閉じる' : '詳細を見る'}
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {showConfirm && (
