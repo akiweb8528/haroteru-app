@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import type { BillingCycle, CreateTrackedSubscriptionInput, ReviewPriority, SubscriptionCategory, UpdateTrackedSubscriptionInput } from '@/types';
+import type { BillingCycle, CreateTrackedSubscriptionInput, SubscriptionCategory, UpdateTrackedSubscriptionInput } from '@/types';
 import { ApiError } from '@/shared/api/http-client';
 import { usePreferences } from '@/providers/PreferencesProvider';
 
