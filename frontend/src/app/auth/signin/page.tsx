@@ -5,6 +5,7 @@ import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { DEV_AUTH_NETWORK_ERROR, resolveDevAuthErrorMessage } from '@/lib/auth-errors';
 import { BrandLogo } from '@/components/layout/BrandLogo';
+import { GooglePrivacyNotice } from '@/components/auth/GooglePrivacyNotice';
 import { sanitizeCallbackUrl } from '@/lib/utils';
 import { SignInButton } from '@/components/auth/SignInButton';
 import { DevSignInForm } from '@/components/auth/DevSignInForm';
@@ -65,6 +66,7 @@ export default async function SignInPage({ searchParams }: Props) {
             </div>
           )}
 
+          <GooglePrivacyNotice className="mb-4" />
           <SignInButton callbackUrl={callbackUrl} />
 
           {devAuthEnabled && (
