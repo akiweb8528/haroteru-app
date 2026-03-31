@@ -62,10 +62,10 @@ export const metadata: Metadata = {
     ],
   },
   twitter: {
-    card: 'summary_large_image',
+    card: 'summary',
     title: 'サブスク払ろてる',
     description: '登録なしですぐ使える、サブスクの軽量ダッシュボードやで。',
-    images: ['/twitter-image.png'],
+    images: ['/icon.png'],
   },
 };
 
