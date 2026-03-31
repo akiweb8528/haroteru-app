@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { signIn } from 'next-auth/react';
 
 interface Props {
@@ -19,13 +20,13 @@ const GoogleLogo = ({ className }: { className: string }) => (
 export function SignInButton({ callbackUrl = '/subscriptions', compact = false }: Props) {
   if (compact) {
     return (
-      <button
-        onClick={() => signIn('google', { callbackUrl })}
+      <Link
+        href={`/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`}
         className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md active:scale-95"
       >
         <GoogleLogo className="h-4 w-4" />
         Googleで同期する
-      </button>
+      </Link>
     );
   }
 
