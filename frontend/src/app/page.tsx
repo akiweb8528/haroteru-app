@@ -1,9 +1,9 @@
 import { getServerSession } from 'next-auth';
 import { redirect } from 'next/navigation';
-import Link from 'next/link';
 import { authOptions } from '@/lib/auth';
 import { SignInButton } from '@/components/auth/SignInButton';
 import { BrandLogo } from '@/components/layout/BrandLogo';
+import { SiteFooter } from '@/components/layout/SiteFooter';
 import { GuestLandingHero } from '@/features/subscriptions/components/GuestLandingHero';
 import { SubscriptionDashboard } from '@/features/subscriptions/components/SubscriptionDashboard';
 
@@ -36,15 +36,7 @@ export default async function LandingPage() {
         <SubscriptionDashboard isGuest />
       </main>
 
-      <footer className="border-t border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-950">
-        <div className="mx-auto flex max-w-5xl flex-col gap-2 px-4 py-4 text-sm text-gray-500 sm:flex-row sm:items-center sm:justify-between dark:text-gray-400">
-          <p>ご利用にあたっては利用規約とプライバシーポリシーをご確認ください。</p>
-          <div className="flex items-center gap-4">
-            <Link href="/terms" className="transition hover:text-gray-700 dark:hover:text-gray-200">利用規約</Link>
-            <Link href="/privacy" className="transition hover:text-gray-700 dark:hover:text-gray-200">プライバシーポリシー</Link>
-          </div>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }
