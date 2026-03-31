@@ -5,6 +5,7 @@ import Image from 'next/image';
 import { signOut, useSession } from 'next-auth/react';
 import { cn } from '@/lib/utils';
 import { tasteLabels } from '@/lib/taste';
+import { GooglePrivacyNotice } from '@/components/auth/GooglePrivacyNotice';
 import { userApi } from '@/features/account/api/user-client';
 import { usePreferences } from '@/providers/PreferencesProvider';
 
@@ -70,6 +71,7 @@ export function SettingsView() {
       <section className="mb-6 rounded-2xl border border-gray-200 bg-white p-6 shadow-sm dark:border-gray-700 dark:bg-gray-900">
         <h2 className="mb-1 text-lg font-semibold text-gray-900 dark:text-gray-100">同期アカウント</h2>
         <p className="mb-5 text-sm text-gray-500 dark:text-gray-400">{copy.syncDescription}</p>
+        <GooglePrivacyNotice className="mb-5" />
 
         <div className="flex items-center justify-between gap-4">
           <div className="flex items-center gap-3">

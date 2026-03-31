@@ -1,7 +1,8 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
-import { signIn, useSession } from 'next-auth/react';
+import { useSession } from 'next-auth/react';
 import { cn, formatCurrency } from '@/lib/utils';
 import type { SubscriptionListParams } from '@/features/subscriptions/api/subscription-client';
 import { SubscriptionFilters } from '@/features/subscriptions/components/SubscriptionFilters';
@@ -131,7 +132,9 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
       {isGuest && (
         <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-4 text-sm text-blue-900 dark:border-blue-900/40 dark:bg-blue-900/10 dark:text-blue-200">
           <p>{guestSyncCopy}</p>
-          <button onClick={() => signIn('google', { callbackUrl: '/subscriptions' })} className="mt-2 font-semibold underline underline-offset-2">Googleで同期を有効にする</button>
+          <Link href="/auth/signin?callbackUrl=%2Fsubscriptions" className="mt-2 inline-block font-semibold underline underline-offset-2">
+            Googleで同期を有効にする
+          </Link>
         </div>
       )}
 
