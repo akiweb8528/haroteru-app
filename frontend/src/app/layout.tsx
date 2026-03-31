@@ -54,7 +54,7 @@ export const metadata: Metadata = {
     description: '登録なしですぐ使える、サブスクの軽量ダッシュボードやで。',
     images: [
       {
-        url: '/opengraph-image',
+        url: '/opengraph-image.png',
         width: 1200,
         height: 630,
         alt: 'サブスク払ろてる',
@@ -65,7 +65,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'サブスク払ろてる',
     description: '登録なしですぐ使える、サブスクの軽量ダッシュボードやで。',
-    images: ['/twitter-image'],
+    images: ['/twitter-image.png'],
   },
 };
 
