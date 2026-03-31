@@ -1,8 +1,10 @@
 import type { Metadata } from 'next';
 import { getServerSession } from 'next-auth';
+import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { DEV_AUTH_NETWORK_ERROR, resolveDevAuthErrorMessage } from '@/lib/auth-errors';
+import { BrandLogo } from '@/components/layout/BrandLogo';
 import { sanitizeCallbackUrl } from '@/lib/utils';
 import { SignInButton } from '@/components/auth/SignInButton';
 import { DevSignInForm } from '@/components/auth/DevSignInForm';
@@ -39,9 +41,7 @@ export default async function SignInPage({ searchParams }: Props) {
       <div className="w-full max-w-sm">
         <div className="rounded-2xl border border-gray-100 bg-white p-8 shadow-sm dark:border-gray-800 dark:bg-gray-900">
           <div className="mb-6 flex justify-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-brand-600 text-xl font-bold text-white">
-              ¥
-            </div>
+            <BrandLogo size={56} />
           </div>
 
           <h1 className="mb-1 text-center text-2xl font-bold text-gray-900 dark:text-white">
@@ -50,6 +50,14 @@ export default async function SignInPage({ searchParams }: Props) {
           <p className="mb-6 text-center text-sm text-gray-500 dark:text-gray-400">
             サブスク払ろてるのデータをGoogleアカウントに保存するで
           </p>
+          <div className="mb-6 text-center">
+            <Link
+              href="/"
+              className="text-sm font-medium text-brand-600 transition hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300"
+            >
+              ホーム画面に戻る
+            </Link>
+          </div>
 
           {errorMessage && (
             <div className="mb-4 rounded-lg bg-red-50 px-4 py-3 text-sm text-red-700 dark:bg-red-900/20 dark:text-red-300">
