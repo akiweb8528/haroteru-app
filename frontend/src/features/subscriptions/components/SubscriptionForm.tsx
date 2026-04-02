@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import type { KeyboardEvent } from 'react';
 import type { BillingCycle, CreateTrackedSubscriptionInput, SubscriptionCategory, UpdateTrackedSubscriptionInput } from '@/types';
 import { ApiError } from '@/shared/api/http-client';
 import { usePreferences } from '@/providers/PreferencesProvider';
@@ -44,7 +45,12 @@ function clampAmountInput(value: string): string {
 export function SubscriptionForm({ initialValues, onSubmit, onCancel, submitLabel = 'サブスクを追加' }: Props) {
   const { taste } = usePreferences();
   const isEditing = initialValues !== undefined;
+  const formRef = useRef<HTMLFormElement | null>(null);
   const nameInputRef = useRef<HTMLInputElement | null>(null);
+  const amountInputRef = useRef<HTMLInputElement | null>(null);
+  const billingCycleRef = useRef<HTMLSelectElement | null>(null);
+  const categoryRef = useRef<HTMLSelectElement | null>(null);
+  const noteRef = useRef<HTMLTextAreaElement | null>(null);
   const [name, setName] = useState(initialValues?.name ?? '');
   const [amountYen, setAmountYen] = useState(String(initialValues?.amountYen ?? ''));
   const [billingCycle, setBillingCycle] = useState<BillingCycle>(initialValues?.billingCycle ?? 'monthly');
@@ -64,6 +70,29 @@ export function SubscriptionForm({ initialValues, onSubmit, onCancel, submitLabe
   useEffect(() => {
     nameInputRef.current?.focus();
   }, []);
+
+  const focusNextField = (current: 'name' | 'amount' | 'billingCycle' | 'category') => {
+    const nextFieldMap = {
+      name: amountInputRef,
+      amount: noteRef,
+      billingCycle: noteRef,
+      category: noteRef,
+    } satisfies Record<typeof current, React.RefObject<HTMLElement | null>>;
+
+    nextFieldMap[current].current?.focus();
+  };
+
+  const handleFieldSubmit = (
+    event: KeyboardEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>,
+    current: 'name' | 'amount' | 'billingCycle' | 'category' | 'note',
+  ) => {
+    if (event.key !== 'Enter' || event.nativeEvent.isComposing) return;
+    if (current === 'note') return;
+
+    event.preventDefault();
+
+    focusNextField(current);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,24 +130,27 @@ export function SubscriptionForm({ initialValues, onSubmit, onCancel, submitLabe
   };
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-2xl border-2 border-brand-200 bg-white p-5 shadow-sm shadow-brand-100/40 dark:border-brand-800/50 dark:bg-gray-900 dark:shadow-none">
+    <form ref={formRef} onSubmit={handleSubmit} className="rounded-2xl border-2 border-brand-200 bg-white p-5 shadow-sm shadow-brand-100/40 dark:border-brand-800/50 dark:bg-gray-900 dark:shadow-none">
       {error && <div className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-300">{error}</div>}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block">
           <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">サービス名</span>
-          <input ref={nameInputRef} value={name} onChange={(e) => setName(e.target.value)} maxLength={MAX_NAME_LENGTH} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-base focus:border-brand-400 focus:outline-none sm:text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" placeholder={servicePlaceholder} />
+          <input ref={nameInputRef} value={name} onChange={(e) => setName(e.target.value)} onKeyDown={(event) => handleFieldSubmit(event, 'name')} enterKeyHint="next" maxLength={MAX_NAME_LENGTH} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-base focus:border-brand-400 focus:outline-none sm:text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" placeholder={servicePlaceholder} />
         </label>
 
         <label className="block">
           <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">金額</span>
           <input
+            ref={amountInputRef}
             type="number"
             min={1}
             max={MAX_AMOUNT_YEN}
             inputMode="numeric"
             value={amountYen}
             onChange={(e) => setAmountYen(clampAmountInput(e.target.value))}
+            onKeyDown={(event) => handleFieldSubmit(event, 'amount')}
+            enterKeyHint="next"
             className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-base focus:border-brand-400 focus:outline-none sm:text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100"
             placeholder="980"
           />
@@ -126,7 +158,7 @@ export function SubscriptionForm({ initialValues, onSubmit, onCancel, submitLabe
 
         <label className="block">
           <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">支払い頻度</span>
-          <select value={billingCycle} onChange={(e) => setBillingCycle(e.target.value as BillingCycle)} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-base focus:border-brand-400 focus:outline-none sm:text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100">
+          <select ref={billingCycleRef} value={billingCycle} onChange={(e) => setBillingCycle(e.target.value as BillingCycle)} onKeyDown={(event) => handleFieldSubmit(event, 'billingCycle')} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-base focus:border-brand-400 focus:outline-none sm:text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100">
             <option value="monthly">月額</option>
             <option value="yearly">年額</option>
           </select>
@@ -134,7 +166,7 @@ export function SubscriptionForm({ initialValues, onSubmit, onCancel, submitLabe
 
         <label className="block">
           <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">カテゴリ</span>
-          <select value={category} onChange={(e) => setCategory(e.target.value as SubscriptionCategory | '')} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-base focus:border-brand-400 focus:outline-none sm:text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100">
+          <select ref={categoryRef} value={category} onChange={(e) => setCategory(e.target.value as SubscriptionCategory | '')} onKeyDown={(event) => handleFieldSubmit(event, 'category')} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-base focus:border-brand-400 focus:outline-none sm:text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100">
             <option value="">未選択</option>
             {categories.map((item) => <option key={item.value} value={item.value}>{item.label}</option>)}
           </select>
@@ -143,7 +175,7 @@ export function SubscriptionForm({ initialValues, onSubmit, onCancel, submitLabe
 
       <label className="mt-4 block">
         <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">メモ</span>
-        <textarea value={note} onChange={(e) => setNote(e.target.value)} rows={3} maxLength={MAX_NOTE_LENGTH} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-base focus:border-brand-400 focus:outline-none sm:text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" placeholder={notePlaceholder} />
+        <textarea ref={noteRef} value={note} onChange={(e) => setNote(e.target.value)} onKeyDown={(event) => handleFieldSubmit(event, 'note')} enterKeyHint="done" rows={3} maxLength={MAX_NOTE_LENGTH} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-base focus:border-brand-400 focus:outline-none sm:text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" placeholder={notePlaceholder} />
       </label>
 
       <div className="mt-5 flex justify-end gap-2">
