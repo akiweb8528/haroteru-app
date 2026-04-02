@@ -185,6 +185,20 @@ describe('SubscriptionCard', () => {
     expect(screen.queryByTestId('subscription-form')).not.toBeInTheDocument();
   });
 
+  it('simple テイストではロック中バッジを表示しない', () => {
+    mockUsePreferences.mockReturnValue({ taste: 'simple' });
+
+    render(
+      <SubscriptionCard
+        subscription={{ ...baseSubscription, locked: true }}
+        onUpdate={onUpdate}
+        onDelete={onDelete}
+      />,
+    );
+
+    expect(screen.queryByText('ロック中')).not.toBeInTheDocument();
+  });
+
   it('並び替え可能なとき左側にドラッグハンドルを表示する', () => {
     render(
       <SubscriptionCard
