@@ -8,10 +8,12 @@ vi.mock('./SubscriptionForm', () => ({
   SubscriptionForm: () => <div data-testid="subscription-form" />,
 }));
 
+const mockUsePreferences = vi.fn(() => ({
+  taste: 'ossan',
+}));
+
 vi.mock('@/providers/PreferencesProvider', () => ({
-  usePreferences: () => ({
-    taste: 'ossan',
-  }),
+  usePreferences: () => mockUsePreferences(),
 }));
 
 const baseSubscription: TrackedSubscription = {
@@ -36,6 +38,7 @@ describe('SubscriptionCard', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockUsePreferences.mockReturnValue({ taste: 'ossan' });
   });
 
   it('サービス名・金額・カテゴリを表示する', () => {
@@ -156,6 +159,30 @@ describe('SubscriptionCard', () => {
     fireEvent.click(screen.getByRole('button', { name: '編集' }));
 
     expect(screen.getByTestId('subscription-form')).toBeInTheDocument();
+  });
+
+  it('simple テイストではカードクリックで SubscriptionForm が表示される', () => {
+    mockUsePreferences.mockReturnValue({ taste: 'simple' });
+
+    render(<SubscriptionCard subscription={baseSubscription} onUpdate={onUpdate} onDelete={onDelete} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'Netflix を編集' }));
+
+    expect(screen.getByTestId('subscription-form')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '編集' })).not.toBeInTheDocument();
+  });
+
+  it('simple テイストではロックボタンを押しても編集モードに入らない', async () => {
+    mockUsePreferences.mockReturnValue({ taste: 'simple' });
+
+    render(<SubscriptionCard subscription={baseSubscription} onUpdate={onUpdate} onDelete={onDelete} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'ロックする' }));
+
+    await waitFor(() => {
+      expect(onUpdate).toHaveBeenCalledWith('sub-1', { locked: true });
+    });
+    expect(screen.queryByTestId('subscription-form')).not.toBeInTheDocument();
   });
 
   it('並び替え可能なとき左側にドラッグハンドルを表示する', () => {
