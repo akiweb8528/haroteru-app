@@ -13,6 +13,12 @@ export function SubscriptionFilters({ filters, onChange }: Props) {
 
   return (
     <div className="space-y-3 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+      <div className="flex items-center justify-between gap-3">
+        <div>
+          <p className="text-sm font-semibold text-gray-900 dark:text-gray-100">検索・絞り込み</p>
+        </div>
+      </div>
+
       <div className="grid gap-3 md:grid-cols-[1fr_auto_auto]">
         <input
           type="text"
