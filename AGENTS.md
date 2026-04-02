@@ -41,7 +41,7 @@
 
 ## Verification
 
-- Frontend: `cd frontend && npm run type-check && npm test`
+- Frontend: `cd frontend && npm run lint && npm run type-check && npm test`
 - Backend: `cd backend && go test ./...`
 - UI 変更は mobile での見え方とスクロール位置も確認する
 
