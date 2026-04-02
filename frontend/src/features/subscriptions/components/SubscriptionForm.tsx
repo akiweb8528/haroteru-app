@@ -54,7 +54,7 @@ export function SubscriptionForm({ initialValues, onSubmit, onCancel, submitLabe
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const servicePlaceholder = taste === 'ossan' ? 'Amazon Prime、Netflix、 とか' : 'Amazon Prime、Netflix、 など';
-  const notePlaceholder = taste === 'ossan' ? '家族共有、年払い、見直し候補とか' : '家族共有、年払い、見直し候補など';
+  const notePlaceholder = taste === 'ossan' ? '家族共有、見直し候補とか' : '家族共有、見直し候補など';
   const amountLimitError = taste === 'ossan' ? '金額は100万円以下で入力してや。' : '金額は100万円以下で入力してください。';
   const submitError =
     taste === 'ossan'

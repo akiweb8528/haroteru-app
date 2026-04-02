@@ -93,6 +93,7 @@ export function SubscriptionCard({
   onTouchDragCancel,
 }: Props) {
   const { taste } = usePreferences();
+  const isSimpleTaste = taste === 'simple';
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isTogglingLock, setIsTogglingLock] = useState(false);
@@ -121,6 +122,11 @@ export function SubscriptionCard({
     }
   };
 
+  const openEdit = () => {
+    if (isDeleting || isTogglingLock || isDragging || !isSimpleTaste) return;
+    setIsEditing(true);
+  };
+
   if (isEditing) {
     return (
       <SubscriptionForm
@@ -144,7 +150,18 @@ export function SubscriptionCard({
           isDeleting && 'pointer-events-none opacity-50',
           isDragging && 'opacity-40',
           isDropTarget && 'border-brand-400 ring-2 ring-brand-200 dark:ring-brand-900/50',
+          isSimpleTaste && !isDragging && 'cursor-pointer hover:border-brand-200 hover:bg-brand-50/40 dark:hover:border-brand-900/50 dark:hover:bg-brand-950/20',
         )}
+        onClick={openEdit}
+        onKeyDown={(event) => {
+          if (!isSimpleTaste) return;
+          if (event.key !== 'Enter' && event.key !== ' ') return;
+          event.preventDefault();
+          openEdit();
+        }}
+        role={isSimpleTaste ? 'button' : undefined}
+        tabIndex={isSimpleTaste ? 0 : undefined}
+        aria-label={isSimpleTaste ? `${subscription.name} を編集` : undefined}
         onDragOver={(event) => {
           if (!canReorder || !onDragOver) return;
           event.preventDefault();
@@ -161,6 +178,7 @@ export function SubscriptionCard({
             <button
               type="button"
               draggable={canReorder}
+              onClick={(event) => event.stopPropagation()}
               onDragStart={(event) => {
                 if (!canReorder || !onDragStart) return;
                 event.dataTransfer.effectAllowed = 'move';
@@ -208,7 +226,10 @@ export function SubscriptionCard({
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => void handleToggleLock()}
+              onClick={(event) => {
+                event.stopPropagation();
+                void handleToggleLock();
+              }}
               disabled={isDeleting || isTogglingLock}
               aria-pressed={subscription.locked}
               aria-label={subscription.locked ? 'ロックを解除' : 'ロックする'}
@@ -228,9 +249,29 @@ export function SubscriptionCard({
                 )}
               </svg>
             </button>
-            <button onClick={() => setIsEditing(true)} disabled={isDeleting || isTogglingLock} className="rounded-lg px-3 py-1.5 text-sm text-gray-600 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:text-gray-300 dark:hover:bg-gray-800">編集</button>
+            {!isSimpleTaste && (
+              <button
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setIsEditing(true);
+                }}
+                disabled={isDeleting || isTogglingLock}
+                className="rounded-lg px-3 py-1.5 text-sm text-gray-600 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:text-gray-300 dark:hover:bg-gray-800"
+              >
+                編集
+              </button>
+            )}
             {!subscription.locked && (
-              <button onClick={() => setShowConfirm(true)} disabled={isDeleting || isTogglingLock} className="rounded-lg px-3 py-1.5 text-sm text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/20">削除</button>
+              <button
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setShowConfirm(true);
+                }}
+                disabled={isDeleting || isTogglingLock}
+                className="rounded-lg px-3 py-1.5 text-sm text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/20"
+              >
+                削除
+              </button>
             )}
           </div>
         </div>
@@ -259,7 +300,10 @@ export function SubscriptionCard({
             {hasLongNote && (
               <button
                 type="button"
-                onClick={() => setIsNoteExpanded((current) => !current)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setIsNoteExpanded((current) => !current);
+                }}
                 className="mt-2 text-sm font-medium text-brand-600 transition hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300"
               >
                 {isNoteExpanded ? '閉じる' : '詳細を見る'}
