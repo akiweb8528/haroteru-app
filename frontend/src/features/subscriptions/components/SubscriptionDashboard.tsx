@@ -79,7 +79,14 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
 
   useEffect(() => {
     if (!showForm) return;
-    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    const formTop = formRef.current?.getBoundingClientRect().top;
+    if (formTop == null) return;
+
+    window.scrollTo({
+      top: window.scrollY + formTop - 200,
+      behavior: 'smooth',
+    });
   }, [showForm]);
 
   useEffect(() => {
@@ -138,8 +145,6 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
         </div>
       )}
 
-      <div className="mb-4"><SubscriptionFilters filters={filters} onChange={setFilters} /></div>
-
       {showForm && (
         <div
           ref={formRef}
@@ -151,6 +156,8 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
           <SubscriptionForm onSubmit={async (input) => { await create(input); setShowForm(false); }} onCancel={() => setShowForm(false)} />
         </div>
       )}
+
+      <div className="mb-4"><SubscriptionFilters filters={filters} onChange={setFilters} /></div>
 
       {!canReorder && (
         <p className="mb-4 text-xs text-gray-500 dark:text-gray-400">
