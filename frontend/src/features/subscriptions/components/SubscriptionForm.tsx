@@ -96,7 +96,7 @@ export function SubscriptionForm({ initialValues, onSubmit, onCancel, submitLabe
   };
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+    <form onSubmit={handleSubmit} className="rounded-2xl border-2 border-brand-200 bg-white p-5 shadow-sm shadow-brand-100/40 dark:border-brand-800/50 dark:bg-gray-900 dark:shadow-none">
       {error && <div className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-300">{error}</div>}
 
       <div className="grid gap-4 sm:grid-cols-2">
