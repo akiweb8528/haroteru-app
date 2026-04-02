@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import type { BillingCycle, CreateTrackedSubscriptionInput, SubscriptionCategory, UpdateTrackedSubscriptionInput } from '@/types';
 import { ApiError } from '@/shared/api/http-client';
 import { usePreferences } from '@/providers/PreferencesProvider';
@@ -44,6 +44,7 @@ function clampAmountInput(value: string): string {
 export function SubscriptionForm({ initialValues, onSubmit, onCancel, submitLabel = 'サブスクを追加' }: Props) {
   const { taste } = usePreferences();
   const isEditing = initialValues !== undefined;
+  const nameInputRef = useRef<HTMLInputElement | null>(null);
   const [name, setName] = useState(initialValues?.name ?? '');
   const [amountYen, setAmountYen] = useState(String(initialValues?.amountYen ?? ''));
   const [billingCycle, setBillingCycle] = useState<BillingCycle>(initialValues?.billingCycle ?? 'monthly');
@@ -59,6 +60,10 @@ export function SubscriptionForm({ initialValues, onSubmit, onCancel, submitLabe
     taste === 'ossan'
       ? '保存でけへんかった。すまんけどもういっぺん試してや。'
       : '保存できませんでした。時間を空けてもう一度お試しください。';
+
+  useEffect(() => {
+    nameInputRef.current?.focus();
+  }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -96,13 +101,13 @@ export function SubscriptionForm({ initialValues, onSubmit, onCancel, submitLabe
   };
 
   return (
-    <form onSubmit={handleSubmit} className="rounded-2xl border border-gray-200 bg-white p-5 shadow-sm dark:border-gray-700 dark:bg-gray-900">
+    <form onSubmit={handleSubmit} className="rounded-2xl border-2 border-brand-200 bg-white p-5 shadow-sm shadow-brand-100/40 dark:border-brand-800/50 dark:bg-gray-900 dark:shadow-none">
       {error && <div className="mb-4 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-600 dark:bg-red-900/20 dark:text-red-300">{error}</div>}
 
       <div className="grid gap-4 sm:grid-cols-2">
         <label className="block">
           <span className="mb-1 block text-sm font-medium text-gray-700 dark:text-gray-300">サービス名</span>
-          <input value={name} onChange={(e) => setName(e.target.value)} maxLength={MAX_NAME_LENGTH} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-base focus:border-brand-400 focus:outline-none sm:text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" placeholder={servicePlaceholder} />
+          <input ref={nameInputRef} value={name} onChange={(e) => setName(e.target.value)} maxLength={MAX_NAME_LENGTH} className="w-full rounded-xl border border-gray-200 px-3 py-2.5 text-base focus:border-brand-400 focus:outline-none sm:text-sm dark:border-gray-700 dark:bg-gray-800 dark:text-gray-100" placeholder={servicePlaceholder} />
         </label>
 
         <label className="block">
