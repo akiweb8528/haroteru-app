@@ -79,7 +79,14 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
 
   useEffect(() => {
     if (!showForm) return;
-    formRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+
+    const formTop = formRef.current?.getBoundingClientRect().top;
+    if (formTop == null) return;
+
+    window.scrollTo({
+      top: window.scrollY + formTop - 200,
+      behavior: 'smooth',
+    });
   }, [showForm]);
 
   useEffect(() => {
