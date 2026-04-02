@@ -5,7 +5,6 @@ import { redirect } from 'next/navigation';
 import { authOptions } from '@/lib/auth';
 import { DEV_AUTH_NETWORK_ERROR, resolveDevAuthErrorMessage } from '@/lib/auth-errors';
 import { BrandLogo } from '@/components/layout/BrandLogo';
-import { GooglePrivacyNotice } from '@/components/auth/GooglePrivacyNotice';
 import { sanitizeCallbackUrl } from '@/lib/utils';
 import { SignInButton } from '@/components/auth/SignInButton';
 import { DevSignInForm } from '@/components/auth/DevSignInForm';
@@ -66,7 +65,6 @@ export default async function SignInPage({ searchParams }: Props) {
             </div>
           )}
 
-          <GooglePrivacyNotice className="mb-4" />
           <SignInButton callbackUrl={callbackUrl} />
 
           {devAuthEnabled && (
@@ -79,6 +77,22 @@ export default async function SignInPage({ searchParams }: Props) {
               <DevSignInForm callbackUrl={callbackUrl} />
             </>
           )}
+
+          <p className="mt-6 text-center text-xs leading-6 text-gray-500 dark:text-gray-400">
+            続行すると
+            {' '}
+            <Link href="/terms" className="font-medium underline underline-offset-2 transition hover:text-gray-700 dark:hover:text-gray-200">
+              利用規約
+            </Link>
+            {' '}
+            と
+            {' '}
+            <Link href="/privacy" className="font-medium underline underline-offset-2 transition hover:text-gray-700 dark:hover:text-gray-200">
+              プライバシーポリシー
+            </Link>
+            {' '}
+            に同意したものとみなします。
+          </p>
         </div>
       </div>
     </main>
