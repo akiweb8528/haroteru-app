@@ -168,7 +168,7 @@ export function SubscriptionCard({
                 onDragStart(subscription.id);
               }}
               onDragEnd={() => onDragEnd?.()}
-              onTouchStart={(event) => {
+              onTouchStart={() => {
                 if (!canReorder || !onTouchDragStart) return;
                 onTouchDragStart(subscription.id);
               }}
