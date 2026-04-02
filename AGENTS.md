@@ -45,6 +45,10 @@
 - Backend: `cd backend && go test ./...`
 - UI 変更は mobile での見え方とスクロール位置も確認する
 
+## Git Workflow
+
+- PR を作成する場合は、base branch を `staging` にする
+
 ## Skills
 
 - `skills/haroteru-product`: プロダクト前提、用語、UX の判断基準
