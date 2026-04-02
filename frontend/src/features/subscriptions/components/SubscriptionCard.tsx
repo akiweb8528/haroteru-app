@@ -218,7 +218,7 @@ export function SubscriptionCard({
             <div className="min-w-0">
             <div className="flex items-start gap-2">
               <h3 className="min-w-0 break-all text-lg font-semibold text-gray-900 dark:text-gray-100">{subscription.name}</h3>
-              {subscription.locked && <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">ロック中</span>}
+              {subscription.locked && !isSimpleTaste && <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">ロック中</span>}
             </div>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{formatCurrency(subscription.amountYen)} / {billingCycleLabels[subscription.billingCycle]}</p>
             </div>
