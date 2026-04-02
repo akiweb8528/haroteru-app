@@ -81,13 +81,13 @@ export default async function SignInPage({ searchParams }: Props) {
           <p className="mt-6 text-center text-xs leading-6 text-gray-500 dark:text-gray-400">
             続行すると
             {' '}
-            <Link href="/terms" className="font-medium underline underline-offset-2 transition hover:text-gray-700 dark:hover:text-gray-200">
+            <Link href="/terms" target="_blank" rel="noreferrer" className="font-medium underline underline-offset-2 transition hover:text-gray-700 dark:hover:text-gray-200">
               利用規約
             </Link>
             {' '}
             と
             {' '}
-            <Link href="/privacy" className="font-medium underline underline-offset-2 transition hover:text-gray-700 dark:hover:text-gray-200">
+            <Link href="/privacy" target="_blank" rel="noreferrer" className="font-medium underline underline-offset-2 transition hover:text-gray-700 dark:hover:text-gray-200">
               プライバシーポリシー
             </Link>
             {' '}
