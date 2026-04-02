@@ -17,6 +17,10 @@ interface Props {
   onDragEnd?: () => void;
   onDragOver?: (id: string) => void;
   onDrop?: (id: string) => void;
+  onTouchDragStart?: (id: string) => void;
+  onTouchDragMove?: (id: string, touch: { clientX: number; clientY: number }) => void;
+  onTouchDragEnd?: (id: string) => void;
+  onTouchDragCancel?: () => void;
 }
 
 interface DeleteSubscriptionDialogProps {
@@ -83,6 +87,10 @@ export function SubscriptionCard({
   onDragEnd,
   onDragOver,
   onDrop,
+  onTouchDragStart,
+  onTouchDragMove,
+  onTouchDragEnd,
+  onTouchDragCancel,
 }: Props) {
   const { taste } = usePreferences();
   const [isEditing, setIsEditing] = useState(false);
@@ -130,6 +138,7 @@ export function SubscriptionCard({
   return (
     <>
       <div
+        data-subscription-card-id={subscription.id}
         className={cn(
           'rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition dark:border-gray-700 dark:bg-gray-900',
           isDeleting && 'pointer-events-none opacity-50',
@@ -148,7 +157,7 @@ export function SubscriptionCard({
         }}
       >
         <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3">
+          <div className="flex items-start gap-2">
             <button
               type="button"
               draggable={canReorder}
@@ -159,13 +168,30 @@ export function SubscriptionCard({
                 onDragStart(subscription.id);
               }}
               onDragEnd={() => onDragEnd?.()}
+              onTouchStart={(event) => {
+                if (!canReorder || !onTouchDragStart) return;
+                onTouchDragStart(subscription.id);
+              }}
+              onTouchMove={(event) => {
+                if (!canReorder || !onTouchDragMove) return;
+                event.preventDefault();
+                const touch = event.touches[0];
+                if (!touch) return;
+                onTouchDragMove(subscription.id, { clientX: touch.clientX, clientY: touch.clientY });
+              }}
+              onTouchEnd={() => {
+                if (!canReorder || !onTouchDragEnd) return;
+                onTouchDragEnd(subscription.id);
+              }}
+              onTouchCancel={() => onTouchDragCancel?.()}
               aria-label={canReorder ? 'ドラッグして並び替える' : '並び替えはできません'}
               title={canReorder ? 'ドラッグして並び替える' : '登録順のときだけ並び替えできます'}
               className={cn(
-                'mt-0.5 rounded-lg p-2 text-gray-400 transition',
+                '-ml-3 self-center rounded-lg p-2 text-gray-400 transition touch-none',
                 canReorder
-                  ? 'cursor-grab hover:bg-gray-100 hover:text-gray-600 active:cursor-grabbing dark:hover:bg-gray-800 dark:hover:text-gray-200'
+                  ? 'cursor-grab hover:bg-gray-100 hover:text-gray-600 active:cursor-grabbing active:scale-95 active:bg-brand-50 active:text-brand-700 active:ring-2 active:ring-brand-200 dark:hover:bg-gray-800 dark:hover:text-gray-200 dark:active:bg-brand-950/40 dark:active:text-brand-300 dark:active:ring-brand-900/70'
                   : 'cursor-not-allowed opacity-40',
+                isDragging && canReorder && 'scale-95 bg-brand-50 text-brand-700 ring-2 ring-brand-200 dark:bg-brand-950/40 dark:text-brand-300 dark:ring-brand-900/70',
               )}
             >
               <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
