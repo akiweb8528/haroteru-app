@@ -57,9 +57,10 @@ https://haroteru.com
 ### AI 開発構成
 
 - `AGENTS.md`: このリポジトリ全体で共有する最小ルール。プロダクトの形、責務分離、UX / auth / security の判断基準を記載
-- `skills/haroteru-product`: プロダクトの前提、UI コピーの方向性、課金機能の扱いなどをまとめた skill
-- `skills/haroteru-fullstack-delivery`: Next.js + Go 構成で変更を入れる際の責務分離と実装方針をまとめた skill
+- `CLAUDE.md`: `AGENTS.md` を指すシンボリックリンク。Claude Code 側から同じガイドを参照するために利用
+- `skills/`: skill 群
 - `.codex/skills`: `skills/` を指すシンボリックリンク。Codex 側から repo 専用 skill を読み込むために利用
+- `.claude/skills`: `skills/` を指すシンボリックリンク。Claude Code 側から repo 専用 skill を読み込むために利用
 - `.serena/project.yml`: Serena のプロジェクト設定。Go / TypeScript を対象にしたローカルエージェント運用の前提
 
 ## 開発用環境変数
