@@ -192,7 +192,6 @@ export function SubscriptionCard({
               }}
               onTouchMove={(event) => {
                 if (!canReorder || !onTouchDragMove) return;
-                event.preventDefault();
                 const touch = event.touches[0];
                 if (!touch) return;
                 onTouchDragMove(subscription.id, { clientX: touch.clientX, clientY: touch.clientY });
