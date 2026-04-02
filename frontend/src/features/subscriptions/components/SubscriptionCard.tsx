@@ -17,6 +17,10 @@ interface Props {
   onDragEnd?: () => void;
   onDragOver?: (id: string) => void;
   onDrop?: (id: string) => void;
+  onTouchDragStart?: (id: string) => void;
+  onTouchDragMove?: (id: string, touch: { clientX: number; clientY: number }) => void;
+  onTouchDragEnd?: (id: string) => void;
+  onTouchDragCancel?: () => void;
 }
 
 interface DeleteSubscriptionDialogProps {
@@ -83,8 +87,13 @@ export function SubscriptionCard({
   onDragEnd,
   onDragOver,
   onDrop,
+  onTouchDragStart,
+  onTouchDragMove,
+  onTouchDragEnd,
+  onTouchDragCancel,
 }: Props) {
   const { taste } = usePreferences();
+  const isSimpleTaste = taste === 'simple';
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isTogglingLock, setIsTogglingLock] = useState(false);
@@ -113,6 +122,11 @@ export function SubscriptionCard({
     }
   };
 
+  const openEdit = () => {
+    if (isDeleting || isTogglingLock || isDragging || !isSimpleTaste) return;
+    setIsEditing(true);
+  };
+
   if (isEditing) {
     return (
       <SubscriptionForm
@@ -130,12 +144,24 @@ export function SubscriptionCard({
   return (
     <>
       <div
+        data-subscription-card-id={subscription.id}
         className={cn(
           'rounded-2xl border border-gray-200 bg-white p-5 shadow-sm transition dark:border-gray-700 dark:bg-gray-900',
           isDeleting && 'pointer-events-none opacity-50',
           isDragging && 'opacity-40',
           isDropTarget && 'border-brand-400 ring-2 ring-brand-200 dark:ring-brand-900/50',
+          isSimpleTaste && !isDragging && 'cursor-pointer hover:border-brand-200 hover:bg-brand-50/40 dark:hover:border-brand-900/50 dark:hover:bg-brand-950/20',
         )}
+        onClick={openEdit}
+        onKeyDown={(event) => {
+          if (!isSimpleTaste) return;
+          if (event.key !== 'Enter' && event.key !== ' ') return;
+          event.preventDefault();
+          openEdit();
+        }}
+        role={isSimpleTaste ? 'button' : undefined}
+        tabIndex={isSimpleTaste ? 0 : undefined}
+        aria-label={isSimpleTaste ? `${subscription.name} を編集` : undefined}
         onDragOver={(event) => {
           if (!canReorder || !onDragOver) return;
           event.preventDefault();
@@ -148,10 +174,11 @@ export function SubscriptionCard({
         }}
       >
         <div className="flex items-start justify-between gap-4">
-          <div className="flex items-start gap-3">
+          <div className="flex items-start gap-2">
             <button
               type="button"
               draggable={canReorder}
+              onClick={(event) => event.stopPropagation()}
               onDragStart={(event) => {
                 if (!canReorder || !onDragStart) return;
                 event.dataTransfer.effectAllowed = 'move';
@@ -159,13 +186,29 @@ export function SubscriptionCard({
                 onDragStart(subscription.id);
               }}
               onDragEnd={() => onDragEnd?.()}
+              onTouchStart={() => {
+                if (!canReorder || !onTouchDragStart) return;
+                onTouchDragStart(subscription.id);
+              }}
+              onTouchMove={(event) => {
+                if (!canReorder || !onTouchDragMove) return;
+                const touch = event.touches[0];
+                if (!touch) return;
+                onTouchDragMove(subscription.id, { clientX: touch.clientX, clientY: touch.clientY });
+              }}
+              onTouchEnd={() => {
+                if (!canReorder || !onTouchDragEnd) return;
+                onTouchDragEnd(subscription.id);
+              }}
+              onTouchCancel={() => onTouchDragCancel?.()}
               aria-label={canReorder ? 'ドラッグして並び替える' : '並び替えはできません'}
               title={canReorder ? 'ドラッグして並び替える' : '登録順のときだけ並び替えできます'}
               className={cn(
-                'mt-0.5 rounded-lg p-2 text-gray-400 transition',
+                '-ml-3 self-center rounded-lg p-2 text-gray-400 transition touch-none',
                 canReorder
-                  ? 'cursor-grab hover:bg-gray-100 hover:text-gray-600 active:cursor-grabbing dark:hover:bg-gray-800 dark:hover:text-gray-200'
+                  ? 'cursor-grab hover:bg-gray-100 hover:text-gray-600 active:cursor-grabbing active:scale-95 active:bg-brand-50 active:text-brand-700 active:ring-2 active:ring-brand-200 dark:hover:bg-gray-800 dark:hover:text-gray-200 dark:active:bg-brand-950/40 dark:active:text-brand-300 dark:active:ring-brand-900/70'
                   : 'cursor-not-allowed opacity-40',
+                isDragging && canReorder && 'scale-95 bg-brand-50 text-brand-700 ring-2 ring-brand-200 dark:bg-brand-950/40 dark:text-brand-300 dark:ring-brand-900/70',
               )}
             >
               <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -182,7 +225,10 @@ export function SubscriptionCard({
           </div>
           <div className="flex items-center gap-2">
             <button
-              onClick={() => void handleToggleLock()}
+              onClick={(event) => {
+                event.stopPropagation();
+                void handleToggleLock();
+              }}
               disabled={isDeleting || isTogglingLock}
               aria-pressed={subscription.locked}
               aria-label={subscription.locked ? 'ロックを解除' : 'ロックする'}
@@ -202,9 +248,29 @@ export function SubscriptionCard({
                 )}
               </svg>
             </button>
-            <button onClick={() => setIsEditing(true)} disabled={isDeleting || isTogglingLock} className="rounded-lg px-3 py-1.5 text-sm text-gray-600 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:text-gray-300 dark:hover:bg-gray-800">編集</button>
+            {!isSimpleTaste && (
+              <button
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setIsEditing(true);
+                }}
+                disabled={isDeleting || isTogglingLock}
+                className="rounded-lg px-3 py-1.5 text-sm text-gray-600 transition hover:bg-gray-100 disabled:cursor-not-allowed disabled:opacity-50 dark:text-gray-300 dark:hover:bg-gray-800"
+              >
+                編集
+              </button>
+            )}
             {!subscription.locked && (
-              <button onClick={() => setShowConfirm(true)} disabled={isDeleting || isTogglingLock} className="rounded-lg px-3 py-1.5 text-sm text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/20">削除</button>
+              <button
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setShowConfirm(true);
+                }}
+                disabled={isDeleting || isTogglingLock}
+                className="rounded-lg px-3 py-1.5 text-sm text-red-600 transition hover:bg-red-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-red-400 dark:hover:bg-red-900/20"
+              >
+                削除
+              </button>
             )}
           </div>
         </div>
@@ -233,7 +299,10 @@ export function SubscriptionCard({
             {hasLongNote && (
               <button
                 type="button"
-                onClick={() => setIsNoteExpanded((current) => !current)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setIsNoteExpanded((current) => !current);
+                }}
                 className="mt-2 text-sm font-medium text-brand-600 transition hover:text-brand-700 dark:text-brand-400 dark:hover:text-brand-300"
               >
                 {isNoteExpanded ? '閉じる' : '詳細を見る'}

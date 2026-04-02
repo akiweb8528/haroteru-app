@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import type { TrackedSubscription, UpdateTrackedSubscriptionInput } from '@/types';
 import { SubscriptionCard } from '@/features/subscriptions/components/SubscriptionCard';
 import { usePreferences } from '@/providers/PreferencesProvider';
@@ -15,10 +15,45 @@ interface Props {
   canReorder: boolean;
 }
 
+interface TouchPoint {
+  clientX: number;
+  clientY: number;
+}
+
 export function SubscriptionList({ subscriptions, isLoading, error, onUpdate, onDelete, onReorder, canReorder }: Props) {
   const [draggedId, setDraggedId] = useState<string | null>(null);
   const [dropTargetId, setDropTargetId] = useState<string | null>(null);
   const { taste } = usePreferences();
+  const resetDragState = useCallback(() => {
+    setDraggedId(null);
+    setDropTargetId(null);
+  }, []);
+
+  const handleTouchMove = useCallback((touch: TouchPoint, sourceId: string) => {
+    const targetElement = document.elementFromPoint(touch.clientX, touch.clientY);
+    const targetCard = targetElement?.closest<HTMLElement>('[data-subscription-card-id]');
+    const targetId = targetCard?.dataset.subscriptionCardId ?? null;
+
+    if (!targetId || targetId === sourceId) {
+      setDropTargetId(null);
+      return;
+    }
+
+    setDropTargetId(targetId);
+  }, []);
+
+  const handleTouchDrop = useCallback(async (sourceId: string) => {
+    if (!dropTargetId || dropTargetId === sourceId) {
+      resetDragState();
+      return;
+    }
+
+    try {
+      await onReorder(sourceId, dropTargetId);
+    } finally {
+      resetDragState();
+    }
+  }, [dropTargetId, onReorder, resetDragState]);
 
   if (isLoading) {
     return (
@@ -58,24 +93,31 @@ export function SubscriptionList({ subscriptions, isLoading, error, onUpdate, on
           isDragging={draggedId === item.id}
           isDropTarget={dropTargetId === item.id}
           onDragStart={setDraggedId}
-          onDragEnd={() => {
-            setDraggedId(null);
-            setDropTargetId(null);
-          }}
+          onDragEnd={resetDragState}
           onDragOver={(targetId) => {
             if (!draggedId || draggedId === targetId) return;
             setDropTargetId(targetId);
           }}
           onDrop={async (targetId) => {
             if (!draggedId || draggedId === targetId) {
-              setDraggedId(null);
-              setDropTargetId(null);
+              resetDragState();
               return;
             }
-            await onReorder(draggedId, targetId);
-            setDraggedId(null);
+            try {
+              await onReorder(draggedId, targetId);
+            } finally {
+              resetDragState();
+            }
+          }}
+          onTouchDragStart={(id) => {
+            setDraggedId(id);
             setDropTargetId(null);
           }}
+          onTouchDragMove={(id, touch) => handleTouchMove(touch, id)}
+          onTouchDragEnd={(id) => {
+            void handleTouchDrop(id);
+          }}
+          onTouchDragCancel={resetDragState}
         />
       ))}
     </div>
