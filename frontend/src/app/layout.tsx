@@ -40,6 +40,9 @@ const themeInitScript = "try{if(localStorage.getItem('theme')==='dark')document.
 
 export const metadata: Metadata = {
   metadataBase: siteUrl,
+  alternates: {
+    canonical: 'https://haroteru.com/',
+  },
   title: {
     template: '%s | サブスク払ろてる',
     default: 'サブスク払ろてる',
