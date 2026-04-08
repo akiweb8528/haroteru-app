@@ -102,5 +102,14 @@ export function useLocalSubscriptions(params: SubscriptionListParams = {}) {
     update,
     remove,
     reorder,
+    syncState: {
+      pendingCount: 0,
+      isSyncing: false,
+      syncError: null,
+      lastSyncedAt: null,
+      isOfflineReady: true,
+      isOnline: true,
+    },
+    syncNow: async () => {},
   };
 }
