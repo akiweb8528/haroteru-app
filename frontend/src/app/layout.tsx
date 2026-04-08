@@ -1,4 +1,4 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
 import { getServerSession } from 'next-auth';
 import Script from 'next/script';
@@ -6,6 +6,7 @@ import { authOptions } from '@/lib/auth';
 import { SessionProvider } from '@/providers/SessionProvider';
 import { PreferencesProvider } from '@/providers/PreferencesProvider';
 import { SubscriptionMigrationHandler } from '@/features/subscriptions/components/SubscriptionMigrationHandler';
+import { ServiceWorkerRegistration } from '@/features/pwa/components/ServiceWorkerRegistration';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -43,11 +44,18 @@ export const metadata: Metadata = {
   alternates: {
     canonical: 'https://haroteru.com/',
   },
+  manifest: '/manifest.webmanifest',
   title: {
     template: '%s | サブスク払ろてる',
     default: 'サブスク払ろてる',
   },
   description: '登録なしですぐ使える、サブスクの軽量ダッシュボードやで。',
+  applicationName: 'サブスク払ろてる',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'サブスク払ろてる',
+  },
   openGraph: {
     type: 'website',
     locale: 'ja_JP',
@@ -70,6 +78,13 @@ export const metadata: Metadata = {
     description: '登録なしですぐ使える、サブスクの軽量ダッシュボードやで。',
     images: ['/icon.png'],
   },
+};
+
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f9fafb' },
+    { media: '(prefers-color-scheme: dark)', color: '#030712' },
+  ],
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
@@ -103,6 +118,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
       <body className={`${inter.className} h-full bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100`}>
         <SessionProvider session={session}>
           <PreferencesProvider>
+            <ServiceWorkerRegistration />
             <SubscriptionMigrationHandler />
             {children}
           </PreferencesProvider>

@@ -12,7 +12,7 @@ export default async function SettingsPage() {
   if (!session) redirect('/auth/signin');
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="min-h-app flex flex-col">
       <Navbar user={session.user} />
       <main className="flex-1">
         <SettingsView />
