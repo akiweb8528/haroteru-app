@@ -37,6 +37,13 @@ https://haroteru.com
   - ゲスト利用時はブラウザの localStorage
   - ログイン利用時は Backend + PostgreSQL
 
+### ログインあり PWA の設計
+
+- 認証済みユーザーでも、PWA 利用時は直近のサブスク一覧を端末にキャッシュして開けるようにしています
+- オフライン中の追加、編集、削除、並び替えは端末内の pending operation queue に積み、通信復帰後に順番に Backend へ反映します
+- サーバーが正本であることは維持しつつ、PWA では「まず一覧を開けること」と「変更を失いにくいこと」を優先しています
+- iOS では `beforeinstallprompt` が使えないため、Safari の共有メニューからホーム画面追加する案内を別導線で出します
+
 ### フロントエンド構成
 
 - `frontend/src/app`: ルーティング、レイアウト、メタデータ
