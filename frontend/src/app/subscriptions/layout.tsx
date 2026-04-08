@@ -8,7 +8,7 @@ export default async function SubscriptionsLayout({ children }: { children: Reac
   if (!session) return children;
 
   return (
-    <div className="flex min-h-screen flex-col">
+    <div className="min-h-app flex flex-col">
       <Navbar user={session.user} />
       <main className="flex-1">{children}</main>
       <SiteFooter />
