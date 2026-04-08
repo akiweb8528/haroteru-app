@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { signIn } from 'next-auth/react';
 
+const INSTALL_PROMPT_AFTER_GOOGLE_AUTH_KEY = 'install_prompt_after_google_auth';
+
 interface Props {
   callbackUrl?: string;
   compact?: boolean;
@@ -18,10 +20,17 @@ const GoogleLogo = ({ className }: { className: string }) => (
 );
 
 export function SignInButton({ callbackUrl = '/subscriptions', compact = false }: Props) {
+  const markInstallPromptIntent = () => {
+    try {
+      sessionStorage.setItem(INSTALL_PROMPT_AFTER_GOOGLE_AUTH_KEY, 'true');
+    } catch {}
+  };
+
   if (compact) {
     return (
       <Link
         href={`/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`}
+        onClick={markInstallPromptIntent}
         className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md active:scale-95"
       >
         <GoogleLogo className="h-4 w-4" />
@@ -32,7 +41,10 @@ export function SignInButton({ callbackUrl = '/subscriptions', compact = false }
 
   return (
     <button
-      onClick={() => signIn('google', { callbackUrl })}
+      onClick={() => {
+        markInstallPromptIntent();
+        void signIn('google', { callbackUrl });
+      }}
       className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md active:scale-95"
     >
       <GoogleLogo className="h-5 w-5" />

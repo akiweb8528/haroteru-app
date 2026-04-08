@@ -1,16 +1,35 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { useSession } from 'next-auth/react';
 import { usePreferences } from '@/providers/PreferencesProvider';
 
+const INSTALL_PROMPT_AFTER_GOOGLE_AUTH_KEY = 'install_prompt_after_google_auth';
+const INSTALL_PROMPT_DISMISSED_KEY = 'install_prompt_dismissed';
+
+interface BeforeInstallPromptEvent extends Event {
+  readonly platforms: string[];
+  readonly userChoice: Promise<{ outcome: 'accepted' | 'dismissed'; platform: string }>;
+  prompt: () => Promise<void>;
+}
+
 export function ServiceWorkerRegistration() {
+  const { status } = useSession();
   const { taste } = usePreferences();
   const [isOffline, setIsOffline] = useState(false);
   const [updateReady, setUpdateReady] = useState(false);
   const [reconnected, setReconnected] = useState(false);
+  const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
+  const installPromptEventRef = useRef<BeforeInstallPromptEvent | null>(null);
   const reconnectTimerRef = useRef<number | null>(null);
   const hasSeenNetworkStateRef = useRef(false);
+
+  const clearInstallPromptIntent = () => {
+    try {
+      sessionStorage.removeItem(INSTALL_PROMPT_AFTER_GOOGLE_AUTH_KEY);
+    } catch {}
+  };
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -105,6 +124,86 @@ export function ServiceWorkerRegistration() {
     };
   }, []);
 
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const handleBeforeInstallPrompt = (event: Event) => {
+      event.preventDefault();
+      installPromptEventRef.current = event as BeforeInstallPromptEvent;
+
+      try {
+        const shouldPromptAfterAuth = sessionStorage.getItem(INSTALL_PROMPT_AFTER_GOOGLE_AUTH_KEY) === 'true';
+        const dismissed = localStorage.getItem(INSTALL_PROMPT_DISMISSED_KEY) === 'true';
+        if (status === 'authenticated' && shouldPromptAfterAuth && !dismissed) {
+          setShowInstallPrompt(true);
+        }
+      } catch {}
+    };
+
+    const handleAppInstalled = () => {
+      installPromptEventRef.current = null;
+      setShowInstallPrompt(false);
+      clearInstallPromptIntent();
+      try {
+        localStorage.removeItem(INSTALL_PROMPT_DISMISSED_KEY);
+      } catch {}
+    };
+
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+    window.addEventListener('appinstalled', handleAppInstalled);
+
+    return () => {
+      window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
+      window.removeEventListener('appinstalled', handleAppInstalled);
+    };
+  }, [status]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || status !== 'authenticated' || !installPromptEventRef.current) {
+      return;
+    }
+
+    try {
+      const shouldPromptAfterAuth = sessionStorage.getItem(INSTALL_PROMPT_AFTER_GOOGLE_AUTH_KEY) === 'true';
+      const dismissed = localStorage.getItem(INSTALL_PROMPT_DISMISSED_KEY) === 'true';
+      setShowInstallPrompt(shouldPromptAfterAuth && !dismissed);
+    } catch {}
+  }, [status]);
+
+  const dismissInstallPrompt = () => {
+    setShowInstallPrompt(false);
+    clearInstallPromptIntent();
+    try {
+      localStorage.setItem(INSTALL_PROMPT_DISMISSED_KEY, 'true');
+    } catch {}
+  };
+
+  const handleInstallPrompt = async () => {
+    const promptEvent = installPromptEventRef.current;
+    if (!promptEvent) {
+      return;
+    }
+
+    setShowInstallPrompt(false);
+    await promptEvent.prompt();
+    const choice = await promptEvent.userChoice;
+    clearInstallPromptIntent();
+
+    try {
+      if (choice.outcome === 'accepted') {
+        localStorage.removeItem(INSTALL_PROMPT_DISMISSED_KEY);
+      } else {
+        localStorage.setItem(INSTALL_PROMPT_DISMISSED_KEY, 'true');
+      }
+    } catch {}
+
+    if (choice.outcome !== 'accepted') {
+      installPromptEventRef.current = promptEvent;
+    }
+  };
+
   const offlineCopy = taste === 'simple'
     ? 'オフラインです。保存済みの画面はそのまま表示できますが、同期や更新は通信の復旧後に行われます。'
     : 'いまはオフラインやで。保存済みの画面は見られるけど、同期や更新は電波が戻ってからや。';
@@ -114,12 +213,50 @@ export function ServiceWorkerRegistration() {
   const updateCopy = taste === 'simple'
     ? '新しい版の準備ができました。更新すると最新のオフライン設定に切り替わります。'
     : '新しい版の用意ができとるで。更新したらオフライン対応も最新になるわ。';
+  const installCopy = taste === 'simple'
+    ? {
+        title: 'Google連携の次は、アプリとして追加できます。',
+        description: 'ホーム画面に追加しておくと、次からすぐ開けて使いやすくなります。',
+        action: 'アプリとして追加',
+        dismiss: 'あとで',
+      }
+    : {
+        title: 'Google連携できたし、このままアプリ化もしとこか。',
+        description: 'ホーム画面に追加しといたら、次からすぐ開けてかなり楽やで。',
+        action: 'ホームに追加する',
+        dismiss: 'またあとで',
+      };
 
   return (
     <>
-      {(isOffline || reconnected || updateReady) && (
+      {(isOffline || reconnected || updateReady || showInstallPrompt) && (
         <div className="safe-area-px pointer-events-none fixed inset-x-0 bottom-4 z-50">
           <div className="mx-auto max-w-5xl px-4">
+            {!isOffline && showInstallPrompt && (
+              <div className="pointer-events-auto mb-3 rounded-3xl border border-brand-200 bg-white p-5 text-gray-900 shadow-2xl dark:border-brand-800/70 dark:bg-gray-900 dark:text-gray-100">
+                <p className="text-base font-semibold">{installCopy.title}</p>
+                <p className="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300">{installCopy.description}</p>
+                <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      void handleInstallPrompt();
+                    }}
+                    className="rounded-full bg-brand-600 px-4 py-2 font-semibold text-white transition hover:bg-brand-700"
+                  >
+                    {installCopy.action}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={dismissInstallPrompt}
+                    className="rounded-full border border-gray-200 px-4 py-2 font-semibold text-gray-600 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                  >
+                    {installCopy.dismiss}
+                  </button>
+                </div>
+              </div>
+            )}
+
             {isOffline && (
               <div className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 shadow-lg shadow-amber-200/60 dark:border-amber-700 dark:bg-amber-900/80 dark:text-amber-100 dark:shadow-none">
                 {offlineCopy}
