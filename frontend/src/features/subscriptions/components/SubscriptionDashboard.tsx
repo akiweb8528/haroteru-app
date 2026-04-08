@@ -80,9 +80,6 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
   const authenticatedSyncErrorCopy = syncState.syncError ?? (taste === 'simple'
     ? '同期に失敗しました。通信が戻ってから再試行してください。'
     : '同期に失敗してもうた。通信が戻ってから再試行してや。');
-  const authenticatedCachedCopy = taste === 'simple'
-    ? 'この端末に保存した一覧を開いています。ログイン中でも、通信がなくても前回の一覧を確認できます。'
-    : 'この端末に保存しとる一覧を開いとるで。ログイン中でも、通信がなくても前の一覧は見られるようにしとる。';
   const detailToggleLabel = showApprox
     ? (taste === 'simple' ? '正確にする' : '細かくするで')
     : (taste === 'simple' ? '概算にする' : '雑にするで');
@@ -154,12 +151,6 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
           <Link href="/auth/signin?callbackUrl=%2Fsubscriptions" className="mt-2 inline-block font-semibold underline underline-offset-2">
             Googleで同期を有効にする
           </Link>
-        </div>
-      )}
-
-      {!isGuest && syncState.isOfflineReady && (
-        <div className="mb-6 rounded-2xl border border-slate-200 bg-slate-50 px-4 py-4 text-sm text-slate-800 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-200">
-          <p>{authenticatedCachedCopy}</p>
         </div>
       )}
 
