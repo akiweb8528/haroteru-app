@@ -44,6 +44,17 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
   const serverHook = useSubscriptions(isGuest ? null : filters);
   const localHook = useLocalSubscriptions(filters);
   const { subscriptions, meta, isLoading, error, create, update, remove, reorder, syncState, syncNow } = isGuest ? localHook : serverHook;
+  const [recoveredFromOffline, setRecoveredFromOffline] = useState(false);
+  const prevIsOnlineRef = useRef(syncState.isOnline);
+  useEffect(() => {
+    if (!prevIsOnlineRef.current && syncState.isOnline && syncState.pendingCount > 0) {
+      setRecoveredFromOffline(true);
+    }
+    if (syncState.pendingCount === 0) {
+      setRecoveredFromOffline(false);
+    }
+    prevIsOnlineRef.current = syncState.isOnline;
+  }, [syncState.isOnline, syncState.pendingCount]);
   const summary = meta?.summary;
   const hasSubscriptions = subscriptions.length > 0;
   const isMigrationLoading = !isGuest && status === 'authenticated' && hasPendingLocalMigration && !hasSubscriptions && !error;
@@ -154,7 +165,7 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
         </div>
       )}
 
-      {!isGuest && syncState.pendingCount > 0 && status === 'authenticated' && (
+      {!isGuest && syncState.pendingCount > 0 && status === 'authenticated' && (!syncState.isOnline || recoveredFromOffline) && (
         <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-900/10 dark:text-amber-200">
           <p>{syncState.isOnline ? authenticatedSyncingCopy : authenticatedOfflineCopy}</p>
         </div>
