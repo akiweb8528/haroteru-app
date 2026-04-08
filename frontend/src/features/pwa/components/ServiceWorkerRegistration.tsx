@@ -248,7 +248,7 @@ export function ServiceWorkerRegistration() {
 
   return (
     <>
-      {isStandalone && (isOffline || reconnected || updateReady || showInstallPrompt) && (
+      {(showInstallPrompt || (isStandalone && (isOffline || reconnected || updateReady))) && (
         <div className="safe-area-px pointer-events-none fixed inset-x-0 bottom-4 z-50">
           <div className="mx-auto max-w-5xl px-4">
             {!isOffline && showInstallPrompt && (
