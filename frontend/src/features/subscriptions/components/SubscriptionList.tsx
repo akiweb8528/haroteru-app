@@ -4,6 +4,7 @@ import { useCallback, useState } from 'react';
 import type { TrackedSubscription, UpdateTrackedSubscriptionInput } from '@/types';
 import { SubscriptionCard } from '@/features/subscriptions/components/SubscriptionCard';
 import { usePreferences } from '@/providers/PreferencesProvider';
+import { ApiError } from '@/shared/api/http-client';
 
 interface Props {
   subscriptions: TrackedSubscription[];
@@ -64,9 +65,12 @@ export function SubscriptionList({ subscriptions, isLoading, error, onUpdate, on
   }
 
   if (error) {
+    const isOfflineError = error instanceof ApiError && error.code === 'offline';
     return (
       <div className="rounded-2xl border border-red-200 bg-red-50 px-4 py-8 text-center text-sm text-red-700 dark:border-red-900/30 dark:bg-red-900/10 dark:text-red-300">
-        {taste === 'simple' ? '一覧を読み込めませんでした。' : '一覧を読み込めへんかった。'}
+        {isOfflineError
+          ? (taste === 'simple' ? 'オフラインのため一覧を更新できません。通信が戻ると再読み込みできます。' : 'オフラインやから一覧を更新でけへん。通信が戻ったらまた読み込めるで。')
+          : (taste === 'simple' ? '一覧を読み込めませんでした。' : '一覧を読み込めへんかった。')}
       </div>
     );
   }
