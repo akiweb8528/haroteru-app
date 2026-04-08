@@ -22,6 +22,17 @@ function isStandaloneDisplayMode() {
   return window.matchMedia('(display-mode: standalone)').matches || isIosStandalone;
 }
 
+function isIosInstallableBrowser() {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  const userAgent = window.navigator.userAgent;
+  const isIosDevice = /iPhone|iPad|iPod/i.test(userAgent);
+  const isSafari = /Safari/i.test(userAgent) && !/CriOS|FxiOS|EdgiOS/i.test(userAgent);
+  return isIosDevice && isSafari;
+}
+
 export function ServiceWorkerRegistration() {
   const { status } = useSession();
   const { taste } = usePreferences();
@@ -30,6 +41,7 @@ export function ServiceWorkerRegistration() {
   const [updateReady, setUpdateReady] = useState(false);
   const [reconnected, setReconnected] = useState(false);
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
+  const [showIosInstallHint, setShowIosInstallHint] = useState(false);
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
   const installPromptEventRef = useRef<BeforeInstallPromptEvent | null>(null);
   const reconnectTimerRef = useRef<number | null>(null);
@@ -151,11 +163,12 @@ export function ServiceWorkerRegistration() {
     const handleBeforeInstallPrompt = (event: Event) => {
       event.preventDefault();
       installPromptEventRef.current = event as BeforeInstallPromptEvent;
+      setShowIosInstallHint(false);
 
       try {
         const shouldPromptAfterAuth = sessionStorage.getItem(INSTALL_PROMPT_AFTER_GOOGLE_AUTH_KEY) === 'true';
         const dismissed = localStorage.getItem(INSTALL_PROMPT_DISMISSED_KEY) === 'true';
-        if (status === 'authenticated' && shouldPromptAfterAuth && !dismissed) {
+        if (status === 'authenticated' && shouldPromptAfterAuth && !dismissed && !isStandalone) {
           setShowInstallPrompt(true);
         }
       } catch {}
@@ -164,6 +177,7 @@ export function ServiceWorkerRegistration() {
     const handleAppInstalled = () => {
       installPromptEventRef.current = null;
       setShowInstallPrompt(false);
+      setShowIosInstallHint(false);
       clearInstallPromptIntent();
       try {
         localStorage.removeItem(INSTALL_PROMPT_DISMISSED_KEY);
@@ -177,22 +191,25 @@ export function ServiceWorkerRegistration() {
       window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
       window.removeEventListener('appinstalled', handleAppInstalled);
     };
-  }, [status]);
+  }, [isStandalone, status]);
 
   useEffect(() => {
-    if (typeof window === 'undefined' || status !== 'authenticated' || !installPromptEventRef.current) {
+    if (typeof window === 'undefined' || status !== 'authenticated') {
       return;
     }
 
     try {
       const shouldPromptAfterAuth = sessionStorage.getItem(INSTALL_PROMPT_AFTER_GOOGLE_AUTH_KEY) === 'true';
       const dismissed = localStorage.getItem(INSTALL_PROMPT_DISMISSED_KEY) === 'true';
-      setShowInstallPrompt(shouldPromptAfterAuth && !dismissed);
+      const shouldShow = shouldPromptAfterAuth && !dismissed && !isStandalone;
+      setShowInstallPrompt(Boolean(installPromptEventRef.current) && shouldShow);
+      setShowIosInstallHint(!installPromptEventRef.current && shouldShow && isIosInstallableBrowser());
     } catch {}
-  }, [status]);
+  }, [isStandalone, status]);
 
   const dismissInstallPrompt = () => {
     setShowInstallPrompt(false);
+    setShowIosInstallHint(false);
     clearInstallPromptIntent();
     try {
       localStorage.setItem(INSTALL_PROMPT_DISMISSED_KEY, 'true');
@@ -245,10 +262,21 @@ export function ServiceWorkerRegistration() {
         action: 'ホームに追加する',
         dismiss: 'またあとで',
       };
+  const iosInstallCopy = taste === 'simple'
+    ? {
+        title: 'iPhoneでは共有メニューから追加できます。',
+        description: 'Safari の共有ボタンを開いて、「ホーム画面に追加」を選ぶとアプリのように使えます。',
+        dismiss: '閉じる',
+      }
+    : {
+        title: 'iPhone は共有メニューからホームに追加できるで。',
+        description: 'Safari の共有ボタンを開いて、「ホーム画面に追加」を選んだらアプリみたいに使えるわ。',
+        dismiss: '閉じる',
+      };
 
   return (
     <>
-      {isStandalone && (isOffline || reconnected || updateReady || showInstallPrompt) && (
+      {(showInstallPrompt || showIosInstallHint || (isStandalone && (isOffline || reconnected || updateReady))) && (
         <div className="safe-area-px pointer-events-none fixed inset-x-0 bottom-4 z-50">
           <div className="mx-auto max-w-5xl px-4">
             {!isOffline && showInstallPrompt && (
@@ -271,6 +299,22 @@ export function ServiceWorkerRegistration() {
                     className="rounded-full border border-gray-200 px-4 py-2 font-semibold text-gray-600 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
                   >
                     {installCopy.dismiss}
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {!isOffline && !showInstallPrompt && showIosInstallHint && (
+              <div className="pointer-events-auto mb-3 rounded-3xl border border-brand-200 bg-white p-5 text-gray-900 shadow-2xl dark:border-brand-800/70 dark:bg-gray-900 dark:text-gray-100">
+                <p className="text-base font-semibold">{iosInstallCopy.title}</p>
+                <p className="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300">{iosInstallCopy.description}</p>
+                <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+                  <button
+                    type="button"
+                    onClick={dismissInstallPrompt}
+                    className="rounded-full border border-gray-200 px-4 py-2 font-semibold text-gray-600 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
+                  >
+                    {iosInstallCopy.dismiss}
                   </button>
                 </div>
               </div>
