@@ -13,9 +13,19 @@ interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
 }
 
+function isStandaloneDisplayMode() {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  const isIosStandalone = 'standalone' in navigator && Boolean((navigator as Navigator & { standalone?: boolean }).standalone);
+  return window.matchMedia('(display-mode: standalone)').matches || isIosStandalone;
+}
+
 export function ServiceWorkerRegistration() {
   const { status } = useSession();
   const { taste } = usePreferences();
+  const [isStandalone, setIsStandalone] = useState(false);
   const [isOffline, setIsOffline] = useState(false);
   const [updateReady, setUpdateReady] = useState(false);
   const [reconnected, setReconnected] = useState(false);
@@ -36,7 +46,9 @@ export function ServiceWorkerRegistration() {
       return;
     }
 
+    const media = window.matchMedia('(display-mode: standalone)');
     const syncOnlineState = () => {
+      setIsStandalone(isStandaloneDisplayMode());
       const online = window.navigator.onLine;
       setIsOffline(!online);
       if (!hasSeenNetworkStateRef.current) {
@@ -58,12 +70,19 @@ export function ServiceWorkerRegistration() {
     };
 
     syncOnlineState();
+    const syncStandaloneState = () => {
+      setIsStandalone(isStandaloneDisplayMode());
+    };
+
+    syncStandaloneState();
     window.addEventListener('online', syncOnlineState);
     window.addEventListener('offline', syncOnlineState);
+    media.addEventListener('change', syncStandaloneState);
 
     return () => {
       window.removeEventListener('online', syncOnlineState);
       window.removeEventListener('offline', syncOnlineState);
+      media.removeEventListener('change', syncStandaloneState);
       if (reconnectTimerRef.current) {
         window.clearTimeout(reconnectTimerRef.current);
       }
@@ -229,7 +248,7 @@ export function ServiceWorkerRegistration() {
 
   return (
     <>
-      {(isOffline || reconnected || updateReady || showInstallPrompt) && (
+      {isStandalone && (isOffline || reconnected || updateReady || showInstallPrompt) && (
         <div className="safe-area-px pointer-events-none fixed inset-x-0 bottom-4 z-50">
           <div className="mx-auto max-w-5xl px-4">
             {!isOffline && showInstallPrompt && (
