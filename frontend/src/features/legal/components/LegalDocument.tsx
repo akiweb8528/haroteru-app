@@ -14,7 +14,7 @@ interface Props {
 
 export function LegalDocument({ title, updatedAt, summary, sections }: Props) {
   return (
-    <main className="min-h-screen bg-gray-50 px-4 py-16 dark:bg-gray-900">
+    <main className="min-h-app safe-area-pb safe-area-px bg-gray-50 px-4 py-16 dark:bg-gray-900">
       <div className="mx-auto max-w-3xl">
         <div className="rounded-3xl border border-gray-200 bg-white p-8 shadow-sm sm:p-10 dark:border-gray-700 dark:bg-gray-800">
           <div className="mb-8">

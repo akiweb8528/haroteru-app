@@ -1,0 +1,23 @@
+{
+  "name": "サブスク払ろてる",
+  "short_name": "払ろてる",
+  "description": "登録なしですぐ使える、サブスクの軽量ダッシュボードやで。",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f9fafb",
+  "theme_color": "#f97316",
+  "lang": "ja",
+  "icons": [
+    {
+      "src": "/icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    },
+    {
+      "src": "/apple-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}

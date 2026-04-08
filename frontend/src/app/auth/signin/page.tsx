@@ -37,7 +37,7 @@ export default async function SignInPage({ searchParams }: Props) {
   const devAuthEnabled = process.env.DEV_AUTH_ENABLED === 'true';
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4 dark:bg-gray-950">
+    <main className="min-h-app safe-area-pb safe-area-px flex items-center justify-center bg-gray-50 px-4 dark:bg-gray-950">
       <div className="w-full max-w-sm">
         <div className="rounded-2xl border border-gray-100 bg-white p-8 shadow-sm dark:border-gray-800 dark:bg-gray-900">
           <div className="mb-6 flex justify-center">
