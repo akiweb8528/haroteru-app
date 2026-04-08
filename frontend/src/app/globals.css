@@ -35,9 +35,14 @@
     @apply border-border;
   }
 
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
     min-height: 100vh;
     min-height: 100dvh;
+    overscroll-behavior-y: none;
     @apply bg-gray-50 text-gray-900 antialiased;
   }
 
