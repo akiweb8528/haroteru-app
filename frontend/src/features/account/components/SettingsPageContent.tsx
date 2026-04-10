@@ -3,6 +3,7 @@
 import { useSession } from 'next-auth/react';
 import { AuthenticatedAppShell } from '@/components/layout/AuthenticatedAppShell';
 import { GuestAppShell } from '@/components/layout/GuestAppShell';
+import { OfflineAwareLink } from '@/components/navigation/OfflineAwareLink';
 import { SettingsView } from '@/features/account/components/SettingsView';
 
 export function SettingsPageContent() {
@@ -36,12 +37,12 @@ export function SettingsPageContent() {
             >
               Googleで同期を有効にする
             </a>
-            <a
+            <OfflineAwareLink
               href="/"
               className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"
             >
               ダッシュボードへ戻る
-            </a>
+            </OfflineAwareLink>
           </div>
         </div>
       </div>

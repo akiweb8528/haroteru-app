@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { SessionContext, getSession } from 'next-auth/react';
 import type { Session } from 'next-auth';
 import type { SessionContextValue } from 'next-auth/react';
+import { readCachedSession, writeCachedSession } from '@/providers/session-cache';
 
 interface Props {
   children: React.ReactNode;
@@ -19,12 +20,17 @@ function getInitialOnlineState() {
 }
 
 export function SessionProvider({ children, session }: Props) {
-  const [currentSession, setCurrentSession] = useState<Session | null>(session ?? null);
-  const [isLoading, setIsLoading] = useState(session === undefined);
+  const initialSession = session === undefined ? readCachedSession() : (session ?? null);
+  const [currentSession, setCurrentSession] = useState<Session | null>(initialSession);
+  const [isLoading, setIsLoading] = useState(session === undefined && initialSession === null && getInitialOnlineState());
   const [isOnline, setIsOnline] = useState(getInitialOnlineState);
-  const currentSessionRef = useRef<Session | null>(session ?? null);
+  const currentSessionRef = useRef<Session | null>(initialSession);
 
   useEffect(() => {
+    if (session === undefined) {
+      return;
+    }
+
     const nextSession = session ?? null;
     setCurrentSession(nextSession);
     currentSessionRef.current = nextSession;
@@ -74,6 +80,14 @@ export function SessionProvider({ children, session }: Props) {
 
     void refreshSession();
   }, [isOnline, refreshSession, session]);
+
+  useEffect(() => {
+    if (isLoading) {
+      return;
+    }
+
+    writeCachedSession(currentSession);
+  }, [currentSession, isLoading]);
 
   useEffect(() => {
     if (!isOnline || typeof document === 'undefined') {

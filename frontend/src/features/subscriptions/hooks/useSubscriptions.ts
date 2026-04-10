@@ -67,6 +67,7 @@ function resolveApiErrorMessage(error: unknown): string {
 export function useSubscriptions(params: SubscriptionListParams | null = {}) {
   const { data: session, status } = useSession();
   const userId = session?.user.id ?? null;
+  const hasBackendAccessToken = Boolean(session?.backendAccessToken);
   const [isOnline, setIsOnline] = useState(true);
   const [authenticatedState, setAuthenticatedState] = useState<AuthenticatedSubscriptionsState>(emptyAuthenticatedSubscriptionsState());
   const [isInitialized, setIsInitialized] = useState(false);
@@ -112,6 +113,7 @@ export function useSubscriptions(params: SubscriptionListParams | null = {}) {
 
   const shouldFetchServerList = Boolean(
     userId
+    && hasBackendAccessToken
     && isOnline
     && authenticatedState.pendingOperations.length === 0
     && !syncInFlightRef.current,
@@ -140,7 +142,7 @@ export function useSubscriptions(params: SubscriptionListParams | null = {}) {
   }, [data, userId]);
 
   const syncNow = useCallback(async () => {
-    if (!userId || !isOnline || syncInFlightRef.current) {
+    if (!userId || !hasBackendAccessToken || !isOnline || syncInFlightRef.current) {
       return;
     }
 
@@ -196,15 +198,15 @@ export function useSubscriptions(params: SubscriptionListParams | null = {}) {
       syncInFlightRef.current = false;
       setIsSyncing(false);
     }
-  }, [isOnline, userId]);
+  }, [hasBackendAccessToken, isOnline, userId]);
 
   useEffect(() => {
-    if (!userId || !isOnline || authenticatedState.pendingOperations.length === 0) {
+    if (!userId || !hasBackendAccessToken || !isOnline || authenticatedState.pendingOperations.length === 0) {
       return;
     }
 
     void syncNow();
-  }, [authenticatedState.pendingOperations.length, isOnline, syncNow, userId]);
+  }, [authenticatedState.pendingOperations.length, hasBackendAccessToken, isOnline, syncNow, userId]);
 
   const currentSubscriptions = useMemo(
     () => (

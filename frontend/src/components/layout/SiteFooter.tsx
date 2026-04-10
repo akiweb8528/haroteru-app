@@ -1,4 +1,4 @@
-import Link from 'next/link';
+import { OfflineAwareLink } from '@/components/navigation/OfflineAwareLink';
 
 export function SiteFooter() {
   return (
@@ -9,12 +9,12 @@ export function SiteFooter() {
           <p className="text-xs text-gray-400 dark:text-gray-500">© AkiWeb Hakoniwa</p>
         </div>
         <div className="flex items-center gap-4">
-          <Link href="/terms" className="transition hover:text-gray-700 dark:hover:text-gray-200">
+          <OfflineAwareLink href="/terms" className="transition hover:text-gray-700 dark:hover:text-gray-200">
             利用規約
-          </Link>
-          <Link href="/privacy" className="transition hover:text-gray-700 dark:hover:text-gray-200">
+          </OfflineAwareLink>
+          <OfflineAwareLink href="/privacy" className="transition hover:text-gray-700 dark:hover:text-gray-200">
             プライバシーポリシー
-          </Link>
+          </OfflineAwareLink>
         </div>
       </div>
     </footer>

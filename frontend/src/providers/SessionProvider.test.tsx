@@ -3,6 +3,7 @@ import { useSession } from 'next-auth/react';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Session } from 'next-auth';
 import { SessionProvider } from '@/providers/SessionProvider';
+import { SESSION_CACHE_KEY } from '@/providers/session-cache';
 
 const getSessionMock = vi.fn();
 
@@ -47,6 +48,7 @@ describe('SessionProvider', () => {
 
   beforeEach(() => {
     getSessionMock.mockReset();
+    localStorage.clear();
     setNavigatorOnlineState(true);
     Object.defineProperty(document, 'visibilityState', {
       configurable: true,
@@ -55,6 +57,7 @@ describe('SessionProvider', () => {
   });
 
   afterEach(() => {
+    localStorage.clear();
     vi.restoreAllMocks();
   });
 
@@ -63,6 +66,25 @@ describe('SessionProvider', () => {
 
     render(
       <SessionProvider session={session}>
+        <SessionStatus />
+      </SessionProvider>,
+    );
+
+    expect(screen.getByTestId('status')).toHaveTextContent('authenticated');
+    expect(screen.getByTestId('user-id')).toHaveTextContent('user-1');
+    expect(getSessionMock).not.toHaveBeenCalled();
+  });
+
+  it('hydrates the cached session when rendered offline without a server session', () => {
+    setNavigatorOnlineState(false);
+    localStorage.setItem(SESSION_CACHE_KEY, JSON.stringify({
+      user: session.user,
+      expires: session.expires,
+      backendAccessToken: '',
+    }));
+
+    render(
+      <SessionProvider>
         <SessionStatus />
       </SessionProvider>,
     );
@@ -106,6 +128,22 @@ describe('SessionProvider', () => {
 
     await waitFor(() => {
       expect(getSessionMock).toHaveBeenCalledWith({ broadcast: false });
+    });
+  });
+
+  it('stores a minimal cached session without persisting the backend token', async () => {
+    render(
+      <SessionProvider session={session}>
+        <SessionStatus />
+      </SessionProvider>,
+    );
+
+    await waitFor(() => {
+      expect(JSON.parse(localStorage.getItem(SESSION_CACHE_KEY) ?? '{}')).toEqual({
+        user: session.user,
+        expires: session.expires,
+        backendAccessToken: '',
+      });
     });
   });
 });
