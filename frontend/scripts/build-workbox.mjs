@@ -11,6 +11,7 @@ const buildDirectory = path.join(projectRoot, '.next');
 const publicDirectory = path.join(projectRoot, 'public');
 const swDest = path.join(publicDirectory, 'sw.js');
 const offlineFallbackPath = path.join(publicDirectory, 'offline.html');
+const buildIdPath = path.join(buildDirectory, 'BUILD_ID');
 
 async function buildRevision(filePath) {
   const file = await fs.readFile(filePath);
@@ -18,6 +19,7 @@ async function buildRevision(filePath) {
 }
 
 const offlineFallbackRevision = await buildRevision(offlineFallbackPath);
+const routeRevision = (await fs.readFile(buildIdPath, 'utf8')).trim();
 
 const { count, size, warnings } = await generateSW({
   globDirectory: buildDirectory,
@@ -33,14 +35,18 @@ const { count, size, warnings } = await generateSW({
   navigateFallbackDenylist: [/^\/api\//],
   additionalManifestEntries: [
     { url: '/offline.html', revision: offlineFallbackRevision },
+    { url: '/', revision: routeRevision },
+    { url: '/subscriptions', revision: routeRevision },
+    { url: '/settings', revision: routeRevision },
+    { url: '/terms', revision: routeRevision },
+    { url: '/privacy', revision: routeRevision },
   ],
   runtimeCaching: [
     {
       urlPattern: ({ request }) => request.mode === 'navigate',
-      handler: 'NetworkFirst',
+      handler: 'StaleWhileRevalidate',
       options: {
         cacheName: 'pages',
-        networkTimeoutSeconds: 3,
       },
     },
     {
