@@ -1,8 +1,6 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
-import { getServerSession } from 'next-auth';
 import Script from 'next/script';
-import { authOptions } from '@/lib/auth';
 import { SessionProvider } from '@/providers/SessionProvider';
 import { PreferencesProvider } from '@/providers/PreferencesProvider';
 import { SubscriptionMigrationHandler } from '@/features/subscriptions/components/SubscriptionMigrationHandler';
@@ -88,9 +86,7 @@ export const viewport: Viewport = {
   viewportFit: 'cover',
 };
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const session = await getServerSession(authOptions);
-
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ja" className="h-full" suppressHydrationWarning>
       <head>
@@ -117,7 +113,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         )}
       </head>
       <body className={`${inter.className} h-full bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100`}>
-        <SessionProvider session={session}>
+        <SessionProvider>
           <PreferencesProvider>
             <ServiceWorkerRegistration />
             <SubscriptionMigrationHandler />
