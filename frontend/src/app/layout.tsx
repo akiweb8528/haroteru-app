@@ -4,6 +4,7 @@ import Script from 'next/script';
 import { SessionProvider } from '@/providers/SessionProvider';
 import { PreferencesProvider } from '@/providers/PreferencesProvider';
 import { SubscriptionMigrationHandler } from '@/features/subscriptions/components/SubscriptionMigrationHandler';
+import { OfflineNavigationHandler } from '@/features/pwa/components/OfflineNavigationHandler';
 import { ServiceWorkerRegistration } from '@/features/pwa/components/ServiceWorkerRegistration';
 import './globals.css';
 
@@ -90,6 +91,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="ja" className="h-full" suppressHydrationWarning>
       <head>
+        <meta name="mobile-web-app-capable" content="yes" />
         <Script id="theme-init" strategy="beforeInteractive">
           {themeInitScript}
         </Script>
@@ -115,6 +117,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className={`${inter.className} h-full bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100`}>
         <SessionProvider>
           <PreferencesProvider>
+            <OfflineNavigationHandler />
             <ServiceWorkerRegistration />
             <SubscriptionMigrationHandler />
             {children}

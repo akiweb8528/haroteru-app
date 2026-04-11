@@ -6,6 +6,16 @@ import { usePreferences } from '@/providers/PreferencesProvider';
 
 const INSTALL_PROMPT_AFTER_GOOGLE_AUTH_KEY = 'install_prompt_after_google_auth';
 const INSTALL_PROMPT_DISMISSED_KEY = 'install_prompt_dismissed';
+const OFFLINE_ROUTE_URLS = [
+  '/',
+  '/subscriptions',
+  '/settings',
+  '/terms',
+  '/privacy',
+  '/auth/signin',
+  '/auth/signin?callbackUrl=%2Fsubscriptions',
+  '/auth/signin?callbackUrl=%2Fsettings',
+] as const;
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -33,6 +43,14 @@ function isIosInstallableBrowser() {
   return isIosDevice && isSafari;
 }
 
+function hasInstallPromptIntent() {
+  try {
+    return sessionStorage.getItem(INSTALL_PROMPT_AFTER_GOOGLE_AUTH_KEY) === 'true';
+  } catch {
+    return false;
+  }
+}
+
 export function ServiceWorkerRegistration() {
   const { status } = useSession();
   const { taste } = usePreferences();
@@ -51,6 +69,24 @@ export function ServiceWorkerRegistration() {
     try {
       sessionStorage.removeItem(INSTALL_PROMPT_AFTER_GOOGLE_AUTH_KEY);
     } catch {}
+  };
+
+  const warmOfflineRoutes = async () => {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !window.navigator.onLine) {
+      return;
+    }
+
+    try {
+      const readyRegistration = await navigator.serviceWorker.ready;
+      readyRegistration.active?.postMessage({
+        type: 'CACHE_URLS',
+        payload: {
+          urlsToCache: [...OFFLINE_ROUTE_URLS],
+        },
+      });
+    } catch {
+      // Warmup failure should not block normal navigation.
+    }
   };
 
   useEffect(() => {
@@ -120,6 +156,7 @@ export function ServiceWorkerRegistration() {
       try {
         const registration = await navigator.serviceWorker.register('/sw.js');
         registrationRef.current = registration;
+        void warmOfflineRoutes();
 
         if (registration.waiting && isMounted) {
           setUpdateReady(true);
@@ -156,19 +193,31 @@ export function ServiceWorkerRegistration() {
   }, []);
 
   useEffect(() => {
+    if (typeof window === 'undefined' || !('serviceWorker' in navigator) || isOffline) {
+      return;
+    }
+
+    void warmOfflineRoutes();
+  }, [isOffline]);
+
+  useEffect(() => {
     if (typeof window === 'undefined') {
       return;
     }
 
     const handleBeforeInstallPrompt = (event: Event) => {
+      if (!hasInstallPromptIntent() || isStandalone) {
+        installPromptEventRef.current = null;
+        return;
+      }
+
       event.preventDefault();
       installPromptEventRef.current = event as BeforeInstallPromptEvent;
       setShowIosInstallHint(false);
 
       try {
-        const shouldPromptAfterAuth = sessionStorage.getItem(INSTALL_PROMPT_AFTER_GOOGLE_AUTH_KEY) === 'true';
         const dismissed = localStorage.getItem(INSTALL_PROMPT_DISMISSED_KEY) === 'true';
-        if (status === 'authenticated' && shouldPromptAfterAuth && !dismissed && !isStandalone) {
+        if (status === 'authenticated' && !dismissed) {
           setShowInstallPrompt(true);
         }
       } catch {}
@@ -199,9 +248,8 @@ export function ServiceWorkerRegistration() {
     }
 
     try {
-      const shouldPromptAfterAuth = sessionStorage.getItem(INSTALL_PROMPT_AFTER_GOOGLE_AUTH_KEY) === 'true';
       const dismissed = localStorage.getItem(INSTALL_PROMPT_DISMISSED_KEY) === 'true';
-      const shouldShow = shouldPromptAfterAuth && !dismissed && !isStandalone;
+      const shouldShow = hasInstallPromptIntent() && !dismissed && !isStandalone;
       setShowInstallPrompt(Boolean(installPromptEventRef.current) && shouldShow);
       setShowIosInstallHint(!installPromptEventRef.current && shouldShow && isIosInstallableBrowser());
     } catch {}
@@ -273,10 +321,11 @@ export function ServiceWorkerRegistration() {
         description: 'Safari の共有ボタンを開いて、「ホーム画面に追加」を選んだらアプリみたいに使えるわ。',
         dismiss: '閉じる',
       };
+  const showNetworkStatus = isOffline || reconnected || updateReady;
 
   return (
     <>
-      {(showInstallPrompt || showIosInstallHint || (isStandalone && (isOffline || reconnected || updateReady))) && (
+      {(showInstallPrompt || showIosInstallHint || showNetworkStatus) && (
         <div className="safe-area-px pointer-events-none fixed inset-x-0 bottom-4 z-50">
           <div className="mx-auto max-w-5xl px-4">
             {!isOffline && showInstallPrompt && (

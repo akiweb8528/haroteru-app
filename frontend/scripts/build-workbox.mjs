@@ -36,6 +36,7 @@ const { count, size, warnings } = await generateSW({
   additionalManifestEntries: [
     { url: '/offline.html', revision: offlineFallbackRevision },
     { url: '/', revision: routeRevision },
+    { url: '/auth/signin', revision: routeRevision },
     { url: '/subscriptions', revision: routeRevision },
     { url: '/settings', revision: routeRevision },
     { url: '/terms', revision: routeRevision },

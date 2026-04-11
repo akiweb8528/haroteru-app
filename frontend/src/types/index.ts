@@ -118,6 +118,7 @@ declare module 'next-auth/jwt' {
     backendAccessToken?: string;
     backendRefreshToken?: string;
     accessTokenExpires?: number;
+    refreshRetryAt?: number;
     user?: User;
     error?: string;
   }

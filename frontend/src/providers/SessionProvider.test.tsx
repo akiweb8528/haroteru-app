@@ -75,7 +75,7 @@ describe('SessionProvider', () => {
     expect(getSessionMock).not.toHaveBeenCalled();
   });
 
-  it('hydrates the cached session when rendered offline without a server session', () => {
+  it('hydrates the cached session when rendered offline without a server session', async () => {
     setNavigatorOnlineState(false);
     localStorage.setItem(SESSION_CACHE_KEY, JSON.stringify({
       user: session.user,
@@ -89,7 +89,9 @@ describe('SessionProvider', () => {
       </SessionProvider>,
     );
 
-    expect(screen.getByTestId('status')).toHaveTextContent('authenticated');
+    await waitFor(() => {
+      expect(screen.getByTestId('status')).toHaveTextContent('authenticated');
+    });
     expect(screen.getByTestId('user-id')).toHaveTextContent('user-1');
     expect(getSessionMock).not.toHaveBeenCalled();
   });
