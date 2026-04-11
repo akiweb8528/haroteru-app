@@ -120,6 +120,45 @@ describe('SubscriptionCard', () => {
     });
   });
 
+  it('ロック更新の完了前でも表示を先に切り替える', async () => {
+    let resolveUpdate!: (value: TrackedSubscription) => void;
+    const pendingUpdate = new Promise<TrackedSubscription>((resolve) => {
+      resolveUpdate = resolve;
+    });
+    const onPendingUpdate = vi.fn().mockReturnValue(pendingUpdate);
+
+    render(<SubscriptionCard subscription={baseSubscription} onUpdate={onPendingUpdate} onDelete={onDelete} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'ロックする' }));
+
+    expect(screen.getByRole('button', { name: 'ロックを解除' })).toBeInTheDocument();
+    expect(screen.getByText('ロック中')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '削除' })).not.toBeInTheDocument();
+
+    resolveUpdate({ ...baseSubscription, locked: true });
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'ロックを解除' })).not.toBeDisabled();
+    });
+  });
+
+  it('ロック更新に失敗したら表示を元に戻す', async () => {
+    const onFailedUpdate = vi.fn().mockRejectedValue(new Error('failed to update'));
+
+    render(<SubscriptionCard subscription={baseSubscription} onUpdate={onFailedUpdate} onDelete={onDelete} />);
+
+    fireEvent.click(screen.getByRole('button', { name: 'ロックする' }));
+
+    expect(screen.getByRole('button', { name: 'ロックを解除' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: '削除' })).not.toBeInTheDocument();
+
+    await waitFor(() => {
+      expect(screen.getByRole('button', { name: 'ロックする' })).toBeInTheDocument();
+    });
+    expect(screen.getByRole('button', { name: '削除' })).toBeInTheDocument();
+    expect(screen.queryByText('ロック中')).not.toBeInTheDocument();
+  });
+
   it('「削除」ボタンをクリックすると確認ダイアログが表示される', () => {
     render(<SubscriptionCard subscription={baseSubscription} onUpdate={onUpdate} onDelete={onDelete} />);
 
