@@ -90,3 +90,24 @@ export function shouldForceDocumentNavigation(params: {
 
   return true;
 }
+
+/**
+ * Handles a popstate event (browser back / forward) while offline.
+ *
+ * When the user presses back or forward, Next.js handles the event and tries to
+ * fetch an RSC payload for the destination URL.  If that payload is not in the
+ * SW cache the navigation silently fails.  By converting the event to a full
+ * document navigation here, the SW precache can serve the cached HTML page.
+ *
+ * Only fires when the navigator is offline to avoid forcing a full page reload
+ * during normal online usage.
+ */
+export function handleOfflinePopstate(online: boolean): void {
+  if (online) {
+    return;
+  }
+
+  // The URL has already been updated by the browser before popstate fires, so
+  // window.location.href points to the destination page.
+  window.location.assign(window.location.href);
+}
