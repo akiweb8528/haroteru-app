@@ -3,19 +3,9 @@
 import { useEffect, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { usePreferences } from '@/providers/PreferencesProvider';
+import { INSTALL_PROMPT_AFTER_GOOGLE_AUTH_KEY } from '@/features/pwa/lib/constants';
 
-const INSTALL_PROMPT_AFTER_GOOGLE_AUTH_KEY = 'install_prompt_after_google_auth';
 const INSTALL_PROMPT_DISMISSED_KEY = 'install_prompt_dismissed';
-const OFFLINE_ROUTE_URLS = [
-  '/',
-  '/subscriptions',
-  '/settings',
-  '/terms',
-  '/privacy',
-  '/auth/signin',
-  '/auth/signin?callbackUrl=%2Fsubscriptions',
-  '/auth/signin?callbackUrl=%2Fsettings',
-] as const;
 
 interface BeforeInstallPromptEvent extends Event {
   readonly platforms: string[];
@@ -69,24 +59,6 @@ export function ServiceWorkerRegistration() {
     try {
       sessionStorage.removeItem(INSTALL_PROMPT_AFTER_GOOGLE_AUTH_KEY);
     } catch {}
-  };
-
-  const warmOfflineRoutes = async () => {
-    if (typeof window === 'undefined' || !('serviceWorker' in navigator) || !window.navigator.onLine) {
-      return;
-    }
-
-    try {
-      const readyRegistration = await navigator.serviceWorker.ready;
-      readyRegistration.active?.postMessage({
-        type: 'CACHE_URLS',
-        payload: {
-          urlsToCache: [...OFFLINE_ROUTE_URLS],
-        },
-      });
-    } catch {
-      // Warmup failure should not block normal navigation.
-    }
   };
 
   useEffect(() => {
@@ -156,7 +128,6 @@ export function ServiceWorkerRegistration() {
       try {
         const registration = await navigator.serviceWorker.register('/sw.js');
         registrationRef.current = registration;
-        void warmOfflineRoutes();
 
         if (registration.waiting && isMounted) {
           setUpdateReady(true);
@@ -191,14 +162,6 @@ export function ServiceWorkerRegistration() {
       navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
     };
   }, []);
-
-  useEffect(() => {
-    if (typeof window === 'undefined' || !('serviceWorker' in navigator) || isOffline) {
-      return;
-    }
-
-    void warmOfflineRoutes();
-  }, [isOffline]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {

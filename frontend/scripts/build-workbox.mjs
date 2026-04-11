@@ -44,13 +44,6 @@ const { count, size, warnings } = await generateSW({
   ],
   runtimeCaching: [
     {
-      urlPattern: ({ request }) => request.mode === 'navigate',
-      handler: 'StaleWhileRevalidate',
-      options: {
-        cacheName: 'pages',
-      },
-    },
-    {
       urlPattern: ({ url }) => url.origin === 'https://lh3.googleusercontent.com',
       handler: 'StaleWhileRevalidate',
       options: {

@@ -6,6 +6,7 @@ import { PreferencesProvider } from '@/providers/PreferencesProvider';
 import { SubscriptionMigrationHandler } from '@/features/subscriptions/components/SubscriptionMigrationHandler';
 import { OfflineNavigationHandler } from '@/features/pwa/components/OfflineNavigationHandler';
 import { ServiceWorkerRegistration } from '@/features/pwa/components/ServiceWorkerRegistration';
+import { DevPwaPanel } from '@/features/pwa/components/DevPwaPanel';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -119,6 +120,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <PreferencesProvider>
             <OfflineNavigationHandler />
             <ServiceWorkerRegistration />
+            <DevPwaPanel />
             <SubscriptionMigrationHandler />
             {children}
           </PreferencesProvider>
