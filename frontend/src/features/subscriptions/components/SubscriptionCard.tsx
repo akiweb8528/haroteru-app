@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { TrackedSubscription, UpdateTrackedSubscriptionInput } from '@/types';
 import { billingCycleLabels, categoryLabels, formatCurrency, cn } from '@/lib/utils';
 import { SubscriptionForm } from '@/features/subscriptions/components/SubscriptionForm';
@@ -97,9 +97,21 @@ export function SubscriptionCard({
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
   const [isTogglingLock, setIsTogglingLock] = useState(false);
+  const [optimisticLocked, setOptimisticLocked] = useState(subscription.locked);
   const [showConfirm, setShowConfirm] = useState(false);
   const [isNoteExpanded, setIsNoteExpanded] = useState(false);
-  const hasLongNote = subscription.note.length > 120 || subscription.note.includes('\n');
+
+  useEffect(() => {
+    setOptimisticLocked(subscription.locked);
+  }, [subscription.id, subscription.locked]);
+
+  const displaySubscription = optimisticLocked === subscription.locked
+    ? subscription
+    : {
+        ...subscription,
+        locked: optimisticLocked,
+      };
+  const hasLongNote = displaySubscription.note.length > 120 || displaySubscription.note.includes('\n');
 
   const handleDelete = async () => {
     setShowConfirm(false);
@@ -113,10 +125,15 @@ export function SubscriptionCard({
   };
 
   const handleToggleLock = async () => {
+    const previousLocked = displaySubscription.locked;
+    const nextLocked = !previousLocked;
+    setOptimisticLocked(nextLocked);
     setIsTogglingLock(true);
 
     try {
-      await onUpdate(subscription.id, { locked: !subscription.locked });
+      await onUpdate(subscription.id, { locked: nextLocked });
+    } catch {
+      setOptimisticLocked(previousLocked);
     } finally {
       setIsTogglingLock(false);
     }
@@ -130,7 +147,7 @@ export function SubscriptionCard({
   if (isEditing) {
     return (
       <SubscriptionForm
-        initialValues={subscription}
+        initialValues={displaySubscription}
         submitLabel="変更を保存"
         onSubmit={async (input) => {
           await onUpdate(subscription.id, input);
@@ -161,7 +178,7 @@ export function SubscriptionCard({
         }}
         role={isSimpleTaste ? 'button' : undefined}
         tabIndex={isSimpleTaste ? 0 : undefined}
-        aria-label={isSimpleTaste ? `${subscription.name} を編集` : undefined}
+        aria-label={isSimpleTaste ? `${displaySubscription.name} を編集` : undefined}
         onDragOver={(event) => {
           if (!canReorder || !onDragOver) return;
           event.preventDefault();
@@ -217,10 +234,10 @@ export function SubscriptionCard({
             </button>
             <div className="min-w-0">
             <div className="flex items-start gap-2">
-              <h3 className="min-w-0 break-all text-lg font-semibold text-gray-900 dark:text-gray-100">{subscription.name}</h3>
-              {subscription.locked && !isSimpleTaste && <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">ロック中</span>}
+              <h3 className="min-w-0 break-all text-lg font-semibold text-gray-900 dark:text-gray-100">{displaySubscription.name}</h3>
+              {displaySubscription.locked && !isSimpleTaste && <span className="shrink-0 rounded-full bg-emerald-100 px-2 py-0.5 text-xs font-semibold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300">ロック中</span>}
             </div>
-            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{formatCurrency(subscription.amountYen)} / {billingCycleLabels[subscription.billingCycle]}</p>
+            <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">{formatCurrency(displaySubscription.amountYen)} / {billingCycleLabels[displaySubscription.billingCycle]}</p>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -230,18 +247,18 @@ export function SubscriptionCard({
                 void handleToggleLock();
               }}
               disabled={isDeleting || isTogglingLock}
-              aria-pressed={subscription.locked}
-              aria-label={subscription.locked ? 'ロックを解除' : 'ロックする'}
-              title={subscription.locked ? 'ロックを解除' : 'ロックする'}
+              aria-pressed={displaySubscription.locked}
+              aria-label={displaySubscription.locked ? 'ロックを解除' : 'ロックする'}
+              title={displaySubscription.locked ? 'ロックを解除' : 'ロックする'}
               className={cn(
                 'rounded-lg p-2 transition disabled:cursor-not-allowed disabled:opacity-50',
-                subscription.locked
+                displaySubscription.locked
                   ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-300 dark:hover:bg-emerald-900/50'
                   : 'text-gray-500 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800',
               )}
             >
               <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.8} stroke="currentColor" aria-hidden="true">
-                {subscription.locked ? (
+                {displaySubscription.locked ? (
                   <path strokeLinecap="round" strokeLinejoin="round" d="M16.5 10.5V6.75a4.5 4.5 0 1 0-9 0v3.75m-.75 0h10.5A2.25 2.25 0 0 1 19.5 12.75v6A2.25 2.25 0 0 1 17.25 21h-10.5A2.25 2.25 0 0 1 4.5 18.75v-6A2.25 2.25 0 0 1 6.75 10.5Z" />
                 ) : (
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 10.5V6.75a3.75 3.75 0 1 1 7.5 0m-9 3.75h10.5A2.25 2.25 0 0 1 19.5 12.75v6A2.25 2.25 0 0 1 17.25 21h-10.5A2.25 2.25 0 0 1 4.5 18.75v-6A2.25 2.25 0 0 1 6.75 10.5Z" />
@@ -260,7 +277,7 @@ export function SubscriptionCard({
                 編集
               </button>
             )}
-            {!subscription.locked && (
+            {!displaySubscription.locked && (
               <button
                 onClick={(event) => {
                   event.stopPropagation();
@@ -275,15 +292,15 @@ export function SubscriptionCard({
           </div>
         </div>
 
-        {subscription.category && (
+        {displaySubscription.category && (
           <div className="mt-4 flex flex-wrap items-center gap-2 text-xs">
             <span className="rounded-full bg-gray-100 px-2.5 py-1 text-gray-700 dark:bg-gray-800 dark:text-gray-300">
-              {categoryLabels[subscription.category]}
+              {categoryLabels[displaySubscription.category]}
             </span>
           </div>
         )}
 
-        {subscription.note && (
+        {displaySubscription.note && (
           <div className="mt-4">
             <p
               className="whitespace-pre-wrap break-all text-sm leading-6 text-gray-600 dark:text-gray-300"
@@ -294,7 +311,7 @@ export function SubscriptionCard({
                 overflow: 'hidden',
               }}
             >
-              {subscription.note}
+              {displaySubscription.note}
             </p>
             {hasLongNote && (
               <button
@@ -314,7 +331,7 @@ export function SubscriptionCard({
 
       {showConfirm && (
         <DeleteSubscriptionDialog
-          subscriptionName={subscription.name}
+          subscriptionName={displaySubscription.name}
           message={taste === 'simple' ? '削除します。この操作は取り消せません。' : 'を消すで。これ、取り消せへんからな。'}
           isDeleting={isDeleting}
           onCancel={() => setShowConfirm(false)}
