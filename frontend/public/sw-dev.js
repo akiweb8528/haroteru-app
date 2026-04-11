@@ -18,6 +18,9 @@
  */
 
 const CACHE = 'haroteru-dev-v1';
+// RSC payloads are keyed by URL only (ignoring Vary headers) so they can be
+// retrieved with a different Next-Router-State-Tree than when they were stored.
+const RSC_CACHE = 'haroteru-dev-rsc-v1';
 const OFFLINE_FALLBACK = '/offline.html';
 
 /** In-memory offline simulation flag; false on every fresh SW start. */
@@ -70,10 +73,13 @@ self.addEventListener('message', (event) => {
 
 /**
  * Returns true for requests that must always reach the network:
- *   - Next.js internals (HMR, static chunks, RSC payloads, image optimisation)
+ *   - Next.js internals (HMR, static chunks, image optimisation)
  *   - Auth / backend API routes
  *   - Non-GET methods
  *   - Cross-origin requests
+ *
+ * Note: same-origin page paths with the "RSC: 1" header are NOT passed through
+ * here — they are handled by fetchAndCacheRsc so they can be served offline.
  */
 function shouldPassThrough(request) {
   if (request.method !== 'GET') return true;
@@ -102,20 +108,39 @@ self.addEventListener('fetch', (event) => {
   if (shouldPassThrough(event.request)) return;
 
   const { request } = event;
+  const isRsc = request.headers.get('RSC') === '1';
 
   if (simulateOffline) {
-    event.respondWith(serveSimulatedOffline(request));
+    event.respondWith(serveSimulatedOffline(request, isRsc));
   } else if (request.mode === 'navigate') {
     event.respondWith(fetchAndCacheNavigation(request));
+  } else if (isRsc) {
+    // Cache RSC payloads while online so they are available when simulating
+    // offline (mirrors the production Workbox NetworkFirst rule).
+    event.respondWith(fetchAndCacheRsc(request));
   }
-  // Non-navigate, non-passthrough requests while online: network as normal.
+  // Other non-navigate requests while online: pass through to network.
 });
 
 /**
  * When simulating offline: return the cached response if available, otherwise
  * return the offline fallback page for navigations or a 503 for everything else.
+ *
+ * RSC payloads are looked up by URL only (ignoreVary equivalent) because they
+ * were stored that way in fetchAndCacheRsc.
  */
-async function serveSimulatedOffline(request) {
+async function serveSimulatedOffline(request, isRsc) {
+  if (isRsc) {
+    const rscCache = await caches.open(RSC_CACHE);
+    const cached = await rscCache.match(request.url);
+    if (cached) return cached;
+    return new Response('Service Unavailable', {
+      status: 503,
+      statusText: 'Service Unavailable',
+      headers: { 'Content-Type': 'text/plain' },
+    });
+  }
+
   const cache = await caches.open(CACHE);
   const cached = await cache.match(request);
   if (cached) return cached;
@@ -170,5 +195,32 @@ async function fetchAndCacheNavigation(request) {
         headers: { 'Content-Type': 'text/plain' },
       })
     );
+  }
+}
+
+/**
+ * NetworkFirst for RSC payloads: cache by URL only so they can be retrieved
+ * regardless of the Next-Router-State-Tree header value on the next request.
+ * Falls back to the cached payload on network failure (e.g. simulateOffline).
+ */
+async function fetchAndCacheRsc(request) {
+  const cache = await caches.open(RSC_CACHE);
+
+  try {
+    const response = await fetch(request);
+    if (response.ok) {
+      // Store keyed by URL string to sidestep Vary header matching.
+      cache.put(request.url, response.clone());
+    }
+    return response;
+  } catch {
+    const cached = await cache.match(request.url);
+    if (cached) return cached;
+
+    return new Response('Service Unavailable', {
+      status: 503,
+      statusText: 'Service Unavailable',
+      headers: { 'Content-Type': 'text/plain' },
+    });
   }
 }

@@ -43,6 +43,33 @@ const { count, size, warnings } = await generateSW({
     { url: '/privacy', revision: routeRevision },
   ],
   runtimeCaching: [
+    // Next.js App Router sends RSC payloads as same-origin fetch requests (not
+    // navigate mode) identified by the "RSC: 1" request header.  These are NOT
+    // intercepted by the precache layer, so without this rule they fail when
+    // offline.  NetworkFirst with a short timeout keeps them fresh while online
+    // and falls back to the cached payload when offline.
+    // ignoreVary is required because RSC responses carry a broad Vary header
+    // (RSC, Next-Router-State-Tree, …) that would otherwise prevent cache hits.
+    {
+      urlPattern: ({ url, request }) => (
+        url.origin === self.location.origin
+        && !url.pathname.startsWith('/api/')
+        && !url.pathname.startsWith('/_next/')
+        && request.headers.get('RSC') === '1'
+      ),
+      handler: 'NetworkFirst',
+      options: {
+        cacheName: 'rsc-responses',
+        networkTimeoutSeconds: 3,
+        expiration: {
+          maxEntries: 30,
+          maxAgeSeconds: 60 * 60 * 24 * 7, // 7 days
+        },
+        matchOptions: {
+          ignoreVary: true,
+        },
+      },
+    },
     {
       urlPattern: ({ url }) => url.origin === 'https://lh3.googleusercontent.com',
       handler: 'StaleWhileRevalidate',

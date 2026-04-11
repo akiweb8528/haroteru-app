@@ -1,6 +1,7 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import {
   findOfflineNavigationAnchor,
+  handleOfflinePopstate,
   shouldForceDocumentNavigation,
 } from '@/features/pwa/lib/offline-navigation';
 
@@ -25,6 +26,32 @@ describe('findOfflineNavigationAnchor', () => {
     const element = document.createElement('div');
 
     expect(findOfflineNavigationAnchor(element)).toBeNull();
+  });
+});
+
+describe('handleOfflinePopstate', () => {
+  it('calls window.location.assign when offline', () => {
+    const assign = vi.fn();
+    Object.defineProperty(window, 'location', {
+      value: { href: 'https://haroteru.test/settings', assign },
+      configurable: true,
+    });
+
+    handleOfflinePopstate(false);
+
+    expect(assign).toHaveBeenCalledWith('https://haroteru.test/settings');
+  });
+
+  it('does nothing when online', () => {
+    const assign = vi.fn();
+    Object.defineProperty(window, 'location', {
+      value: { href: 'https://haroteru.test/settings', assign },
+      configurable: true,
+    });
+
+    handleOfflinePopstate(true);
+
+    expect(assign).not.toHaveBeenCalled();
   });
 });
 
