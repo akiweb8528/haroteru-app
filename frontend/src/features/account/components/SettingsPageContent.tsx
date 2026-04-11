@@ -31,12 +31,12 @@ export function SettingsPageContent() {
             設定は Google で同期しているときに利用できます。オフラインで開き直す場合も、先に一度サインインしておいてください。
           </p>
           <div className="mt-5 flex flex-wrap gap-3">
-            <a
+            <OfflineAwareLink
               href="/auth/signin?callbackUrl=%2Fsettings"
               className="rounded-xl bg-brand-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-700"
             >
               Googleで同期を有効にする
-            </a>
+            </OfflineAwareLink>
             <OfflineAwareLink
               href="/"
               className="rounded-xl border border-gray-200 px-4 py-2.5 text-sm font-medium text-gray-700 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-200 dark:hover:bg-gray-800"

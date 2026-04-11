@@ -20,10 +20,11 @@ function getInitialOnlineState() {
 }
 
 export function SessionProvider({ children, session }: Props) {
-  const initialSession = session === undefined ? readCachedSession() : (session ?? null);
+  const initialSession = session ?? null;
   const [currentSession, setCurrentSession] = useState<Session | null>(initialSession);
-  const [isLoading, setIsLoading] = useState(session === undefined && initialSession === null && getInitialOnlineState());
+  const [isLoading, setIsLoading] = useState(session === undefined);
   const [isOnline, setIsOnline] = useState(getInitialOnlineState);
+  const [hasBootstrappedCache, setHasBootstrappedCache] = useState(session !== undefined);
   const currentSessionRef = useRef<Session | null>(initialSession);
 
   useEffect(() => {
@@ -35,6 +36,7 @@ export function SessionProvider({ children, session }: Props) {
     setCurrentSession(nextSession);
     currentSessionRef.current = nextSession;
     setIsLoading(false);
+    setHasBootstrappedCache(true);
   }, [session]);
 
   const refreshSession = useCallback(async () => {
@@ -42,17 +44,39 @@ export function SessionProvider({ children, session }: Props) {
       return currentSessionRef.current;
     }
 
-    setIsLoading(true);
+    const shouldBlock = currentSessionRef.current === null;
+    if (shouldBlock) {
+      setIsLoading(true);
+    }
 
     try {
       const nextSession = await getSession({ broadcast: false });
       setCurrentSession(nextSession);
       currentSessionRef.current = nextSession;
       return nextSession;
+    } catch {
+      return currentSessionRef.current;
     } finally {
-      setIsLoading(false);
+      if (shouldBlock) {
+        setIsLoading(false);
+      }
     }
   }, []);
+
+  useEffect(() => {
+    if (session !== undefined || typeof window === 'undefined') {
+      return;
+    }
+
+    const cachedSession = readCachedSession();
+    setCurrentSession(cachedSession);
+    currentSessionRef.current = cachedSession;
+    setHasBootstrappedCache(true);
+
+    if (cachedSession || !window.navigator.onLine) {
+      setIsLoading(false);
+    }
+  }, [session]);
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -74,12 +98,12 @@ export function SessionProvider({ children, session }: Props) {
   }, []);
 
   useEffect(() => {
-    if (session !== undefined || !isOnline) {
+    if (session !== undefined || !hasBootstrappedCache || !isOnline) {
       return;
     }
 
     void refreshSession();
-  }, [isOnline, refreshSession, session]);
+  }, [hasBootstrappedCache, isOnline, refreshSession, session]);
 
   useEffect(() => {
     if (isLoading) {
@@ -109,18 +133,18 @@ export function SessionProvider({ children, session }: Props) {
   }, [isOnline, refreshSession]);
 
   const contextValue = useMemo<SessionContextValue>(() => {
-    if (isLoading) {
-      return {
-        data: null,
-        status: 'loading',
-        update: refreshSession,
-      };
-    }
-
     if (currentSession) {
       return {
         data: currentSession,
         status: 'authenticated',
+        update: refreshSession,
+      };
+    }
+
+    if (isLoading) {
+      return {
+        data: null,
+        status: 'loading',
         update: refreshSession,
       };
     }

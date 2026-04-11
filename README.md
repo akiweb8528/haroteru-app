@@ -44,6 +44,10 @@ https://haroteru.com
 - サーバーが正本であることは維持しつつ、PWA では「まず一覧を開けること」と「変更を失いにくいこと」を優先しています
 - iOS では `beforeinstallprompt` が使えないため、Safari の共有メニューからホーム画面追加する案内を別導線で出します
 
+### オフライン確認の前提
+
+- ローカルで PWA / オフライン挙動を確認する場合は `cd frontend && npm run preview:pwa` を使ってください
+
 ### フロントエンド構成
 
 - `frontend/src/app`: ルーティング、レイアウト、メタデータ

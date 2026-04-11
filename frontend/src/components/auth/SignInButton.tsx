@@ -1,7 +1,7 @@
 'use client';
 
-import Link from 'next/link';
 import { signIn } from 'next-auth/react';
+import { OfflineAwareLink } from '@/components/navigation/OfflineAwareLink';
 
 const INSTALL_PROMPT_AFTER_GOOGLE_AUTH_KEY = 'install_prompt_after_google_auth';
 
@@ -28,14 +28,14 @@ export function SignInButton({ callbackUrl = '/subscriptions', compact = false }
 
   if (compact) {
     return (
-      <Link
+      <OfflineAwareLink
         href={`/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`}
         onClick={markInstallPromptIntent}
         className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md active:scale-95"
       >
         <GoogleLogo className="h-4 w-4" />
         Googleで同期する
-      </Link>
+      </OfflineAwareLink>
     );
   }
 

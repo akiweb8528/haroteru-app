@@ -1,9 +1,9 @@
 'use client';
 
-import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { cn, formatCurrency } from '@/lib/utils';
+import { OfflineAwareLink } from '@/components/navigation/OfflineAwareLink';
 import type { SubscriptionListParams } from '@/features/subscriptions/api/subscription-client';
 import { SubscriptionFilters } from '@/features/subscriptions/components/SubscriptionFilters';
 import { SubscriptionForm } from '@/features/subscriptions/components/SubscriptionForm';
@@ -159,9 +159,9 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
       {isGuest && (
         <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-4 text-sm text-blue-900 dark:border-blue-900/40 dark:bg-blue-900/10 dark:text-blue-200">
           <p>{guestSyncCopy}</p>
-          <Link href="/auth/signin?callbackUrl=%2Fsubscriptions" className="mt-2 inline-block font-semibold underline underline-offset-2">
+          <OfflineAwareLink href="/auth/signin?callbackUrl=%2Fsubscriptions" className="mt-2 inline-block font-semibold underline underline-offset-2">
             Googleで同期を有効にする
-          </Link>
+          </OfflineAwareLink>
         </div>
       )}
 
