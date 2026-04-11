@@ -23,6 +23,10 @@ func NewTrackedSubscriptionHandler(svc *services.TrackedSubscriptionService) *Tr
 func (h *TrackedSubscriptionHandler) List(c echo.Context) error {
 	userID := middleware.UserIDFromContext(c)
 
+	limit := queryInt(c, "limit", 50)
+	if limit > 200 {
+		limit = 200
+	}
 	f := repositories.SubscriptionFilter{
 		Search:         c.QueryParam("search"),
 		Category:       c.QueryParam("category"),
@@ -31,7 +35,7 @@ func (h *TrackedSubscriptionHandler) List(c echo.Context) error {
 		SortBy:         c.QueryParam("sort"),
 		SortOrder:      c.QueryParam("order"),
 		Page:           queryInt(c, "page", 1),
-		Limit:          queryInt(c, "limit", 50),
+		Limit:          limit,
 	}
 
 	if locked := c.QueryParam("locked"); locked != "" {

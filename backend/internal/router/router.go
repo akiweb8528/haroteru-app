@@ -20,10 +20,24 @@ func Setup(
 	subscriptions *handlers.TrackedSubscriptionHandler,
 	frontendURL string,
 	production bool,
+	devAuthEnabled bool,
 ) {
 	e.Validator = customvalidator.New()
 	e.HideBanner = true
 	e.HidePort = true
+
+	// In production the backend sits behind a reverse proxy that sets X-Real-IP
+	// from the real client address. Only trust that header when the request
+	// arrives from a private-network address (the proxy container).
+	// In development use the raw TCP peer address so no header can be spoofed.
+	if production {
+		e.IPExtractor = echo.ExtractIPFromRealIPHeader(
+			echo.TrustLoopback(true),
+			echo.TrustPrivateNet(true),
+		)
+	} else {
+		e.IPExtractor = echo.ExtractIPDirect()
+	}
 
 	e.Use(echomw.RequestID())
 	e.Use(echomw.Recover())
@@ -44,8 +58,13 @@ func Setup(
 	authGroup := v1.Group("/auth")
 	authGroup.Use(authRL.Middleware())
 	authGroup.POST("/google", auth.GoogleSignIn)
-	authGroup.POST("/dev", auth.DevSignIn)
 	authGroup.POST("/refresh", auth.RefreshToken)
+	// Only register the dev-auth endpoint when the feature is explicitly enabled.
+	// Leaving it wired in production leaks the endpoint's existence and creates
+	// a brute-force surface if the flag is accidentally set.
+	if devAuthEnabled {
+		authGroup.POST("/dev", auth.DevSignIn)
+	}
 
 	protected := v1.Group("")
 	protected.Use(authMW.Require())
