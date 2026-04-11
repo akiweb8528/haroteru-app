@@ -2,8 +2,7 @@
 
 import { signIn } from 'next-auth/react';
 import { OfflineAwareLink } from '@/components/navigation/OfflineAwareLink';
-
-const INSTALL_PROMPT_AFTER_GOOGLE_AUTH_KEY = 'install_prompt_after_google_auth';
+import { INSTALL_PROMPT_AFTER_GOOGLE_AUTH_KEY } from '@/features/pwa/lib/constants';
 
 interface Props {
   callbackUrl?: string;
