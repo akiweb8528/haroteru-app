@@ -102,6 +102,10 @@ module.exports = withPWA({
     // are auto-precached by next-pwa with content-hash revisions.
     additionalManifestEntries: PAGE_MANIFEST_ENTRIES,
     runtimeCaching: [
+      {
+        urlPattern: ({ request }) => request.mode === 'navigate',
+        handler: 'NetworkFirst',
+      },
       // -----------------------------------------------------------------------
       // RSC navigation payloads
       //

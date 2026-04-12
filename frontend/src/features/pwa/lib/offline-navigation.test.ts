@@ -82,6 +82,30 @@ describe('installOfflineFetchGuard', () => {
     expect(settled).toBe(false);
   });
 
+  it('calls window.location.assign when RSC fetch throws (stale navigator.onLine)', () => {
+    const assign = vi.fn();
+    Object.defineProperty(window, 'location', {
+      value: { ...window.location, assign },
+      configurable: true,
+    });
+    // navigator.onLine is still true but the actual fetch will fail
+    Object.defineProperty(navigator, 'onLine', { value: true, configurable: true, writable: true });
+    window.fetch = vi.fn().mockRejectedValue(new TypeError('Failed to fetch'));
+
+    cleanup = installOfflineFetchGuard();
+    // Fire the fetch — the guard catches the rejection and calls assign().
+    // The returned promise never settles (navigation in flight), so don't await.
+    void window.fetch('/settings', { headers: { RSC: '1' } });
+
+    // Flush microtasks so the .catch() callback runs before we check assign.
+    return new Promise<void>((resolve) => {
+      setTimeout(() => {
+        expect(assign).toHaveBeenCalledWith('/settings');
+        resolve();
+      }, 0);
+    });
+  });
+
   it('does not intercept RSC prefetch requests when offline', async () => {
     const mock = vi.fn().mockResolvedValue(new Response('prefetch'));
     window.fetch = mock;
