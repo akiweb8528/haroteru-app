@@ -1,13 +1,14 @@
 'use client';
 
-import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import { signOut } from 'next-auth/react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { BrandLogo } from '@/components/layout/BrandLogo';
+import { OfflineAwareLink } from '@/components/navigation/OfflineAwareLink';
 import { usePreferences } from '@/providers/PreferencesProvider';
+import { clearCachedSession } from '@/providers/session-cache';
 
 interface Props {
   user: {
@@ -24,6 +25,7 @@ export function Navbar({ user }: Props) {
 
   function handleSignOut() {
     resetPreferences();
+    clearCachedSession();
     signOut({ callbackUrl: '/' });
   }
 
@@ -35,12 +37,12 @@ export function Navbar({ user }: Props) {
   const showGoogleAvatar = useGoogleAvatar && !!user.image;
 
   return (
-    <nav className="sticky top-0 z-40 border-b border-gray-200 bg-white/95 backdrop-blur dark:border-gray-700 dark:bg-gray-900/95">
+    <nav className="safe-area-pt safe-area-px sticky top-0 z-40 border-b border-gray-200 bg-white/95 backdrop-blur dark:border-gray-700 dark:bg-gray-900/95">
       <div className="mx-auto flex h-16 max-w-5xl items-center justify-between px-4">
-        <Link href="/subscriptions" className="flex items-center gap-2 font-bold text-gray-900 dark:text-gray-100">
+        <OfflineAwareLink href="/subscriptions" className="flex items-center gap-2 font-bold text-gray-900 dark:text-gray-100">
           <BrandLogo />
           サブスク払ろてる
-        </Link>
+        </OfflineAwareLink>
 
         <div className="hidden items-center gap-3 sm:flex">
           <div className="flex items-center gap-1.5 rounded-full border border-green-200 bg-green-50 px-2.5 py-1 text-xs font-medium text-green-700 dark:border-green-800 dark:bg-green-900/20 dark:text-green-400">
@@ -49,7 +51,7 @@ export function Navbar({ user }: Props) {
           </div>
 
           {navItems.map((item) => (
-            <Link
+            <OfflineAwareLink
               key={item.href}
               href={item.href}
               className={cn(
@@ -60,7 +62,7 @@ export function Navbar({ user }: Props) {
               )}
             >
               {item.label}
-            </Link>
+            </OfflineAwareLink>
           ))}
         </div>
 
@@ -102,14 +104,14 @@ export function Navbar({ user }: Props) {
                   <p className="truncate text-xs text-gray-500 dark:text-gray-400">{user.email}</p>
                 </div>
                 {navItems.map((item) => (
-                  <Link
+                  <OfflineAwareLink
                     key={item.href}
                     href={item.href}
                     className={cn('block px-4 py-2 text-sm text-gray-700 hover:bg-gray-50 dark:text-gray-300 dark:hover:bg-gray-700', item.mobileOnly && 'sm:hidden')}
                     onClick={() => setMenuOpen(false)}
                   >
                     {item.label}
-                  </Link>
+                  </OfflineAwareLink>
                 ))}
                 <div className="my-1 border-t border-gray-100 dark:border-gray-700" />
                 <button

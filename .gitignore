@@ -8,6 +8,8 @@
 /build
 /frontend/.next/
 /frontend/tsconfig.tsbuildinfo
+/frontend/public/sw.js
+/frontend/public/sw.js.map
 
 # env
 .env

@@ -33,11 +33,12 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
   const [useGoogleAvatar, setUseGoogleAvatarState] = useState(true);
   const [taste, setTasteState] = useState<CopyTaste>('ossan');
   const [localInitialized, setLocalInitialized] = useState(false);
+  const [isOnline, setIsOnline] = useState(true);
   const pendingThemeRef = useRef<Theme | null>(null);
 
   // Fetch from API when authenticated (shares cache with useMe hook via same key)
   const { data: me } = useSWR(
-    session?.backendAccessToken ? ME_KEY : null,
+    session?.backendAccessToken && isOnline ? ME_KEY : null,
     () => userApi.me(),
     { revalidateOnFocus: false },
   );
@@ -57,6 +58,25 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
     const storedTaste = localStorage.getItem('taste');
     setTasteState(storedTaste === 'simple' ? 'simple' : 'ossan');
     setLocalInitialized(true);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+
+    const syncOnlineState = () => {
+      setIsOnline(window.navigator.onLine);
+    };
+
+    syncOnlineState();
+    window.addEventListener('online', syncOnlineState);
+    window.addEventListener('offline', syncOnlineState);
+
+    return () => {
+      window.removeEventListener('online', syncOnlineState);
+      window.removeEventListener('offline', syncOnlineState);
+    };
   }, []);
 
   // Step 2: once API data arrives, sync to local state + localStorage cache

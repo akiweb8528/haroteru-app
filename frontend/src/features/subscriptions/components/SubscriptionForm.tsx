@@ -66,6 +66,10 @@ export function SubscriptionForm({ initialValues, onSubmit, onCancel, submitLabe
     taste === 'ossan'
       ? '保存でけへんかった。すまんけどもういっぺん試してや。'
       : '保存できませんでした。時間を空けてもう一度お試しください。';
+  const offlineSubmitError =
+    taste === 'ossan'
+      ? 'オフライン中は同期保存でけへんで。通信が戻ってからもういっぺん頼むわ。'
+      : 'オフライン中は同期保存できません。通信が戻ってからもう一度お試しください。';
 
   useEffect(() => {
     nameInputRef.current?.focus();
@@ -121,7 +125,7 @@ export function SubscriptionForm({ initialValues, onSubmit, onCancel, submitLabe
       });
     } catch (err) {
       if (err instanceof ApiError) {
-        setError(err.message);
+        setError(err.code === 'offline' ? offlineSubmitError : err.message);
       } else {
         setError(submitError);
       }

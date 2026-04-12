@@ -2,6 +2,12 @@ import type { NextAuthOptions } from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
 import GoogleProvider from 'next-auth/providers/google';
 import type { JWT } from 'next-auth/jwt';
+import {
+  buildRefreshFailureToken,
+  isAbortError,
+  REFRESH_REQUEST_TIMEOUT_MS,
+  shouldAttemptTokenRefresh,
+} from './auth-refresh';
 import { DEV_AUTH_NETWORK_ERROR } from './auth-errors';
 import { resolveServiceBaseUrl } from './utils';
 
@@ -128,6 +134,7 @@ export const authOptions: NextAuthOptions = {
           token.backendRefreshToken = data.refresh_token;
           token.user = data.user;
           token.accessTokenExpires = Date.now() + 14 * 60 * 1000;
+          token.refreshRetryAt = undefined;
           token.error = undefined;
         } catch (err) {
           console.error('[NextAuth] Backend auth error:', err);
@@ -148,11 +155,12 @@ export const authOptions: NextAuthOptions = {
           tier: devUser.tier,
         };
         token.accessTokenExpires = Date.now() + 14 * 60 * 1000;
+        token.refreshRetryAt = undefined;
         token.error = undefined;
         return token;
       }
 
-      if (token.accessTokenExpires && Date.now() < token.accessTokenExpires) {
+      if (!shouldAttemptTokenRefresh(token)) {
         return token;
       }
 
@@ -188,7 +196,7 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ refresh_token: token.backendRefreshToken }),
-    });
+    }, REFRESH_REQUEST_TIMEOUT_MS);
 
     if (!res.ok) throw new Error('Refresh request failed');
 
@@ -198,10 +206,15 @@ async function refreshAccessToken(token: JWT): Promise<JWT> {
       ...token,
       backendAccessToken: data.access_token,
       accessTokenExpires: Date.now() + 14 * 60 * 1000,
+      refreshRetryAt: undefined,
       error: undefined,
     };
   } catch (err) {
-    console.error('[NextAuth] Token refresh error:', err);
-    return { ...token, error: 'RefreshAccessTokenError' };
+    if (isAbortError(err)) {
+      console.warn(`[NextAuth] Token refresh timed out after ${REFRESH_REQUEST_TIMEOUT_MS}ms`);
+    } else {
+      console.error('[NextAuth] Token refresh error:', err);
+    }
+    return buildRefreshFailureToken(token);
   }
 }

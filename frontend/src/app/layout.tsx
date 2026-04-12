@@ -1,11 +1,12 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { Inter } from 'next/font/google';
-import { getServerSession } from 'next-auth';
 import Script from 'next/script';
-import { authOptions } from '@/lib/auth';
 import { SessionProvider } from '@/providers/SessionProvider';
 import { PreferencesProvider } from '@/providers/PreferencesProvider';
 import { SubscriptionMigrationHandler } from '@/features/subscriptions/components/SubscriptionMigrationHandler';
+import { OfflineNavigationHandler } from '@/features/pwa/components/OfflineNavigationHandler';
+import { ServiceWorkerRegistration } from '@/features/pwa/components/ServiceWorkerRegistration';
+import { DevPwaPanel } from '@/features/pwa/components/DevPwaPanel';
 import './globals.css';
 
 const inter = Inter({ subsets: ['latin'] });
@@ -43,11 +44,18 @@ export const metadata: Metadata = {
   alternates: {
     canonical: 'https://haroteru.com/',
   },
+  manifest: '/manifest.webmanifest',
   title: {
     template: '%s | サブスク払ろてる',
     default: 'サブスク払ろてる',
   },
   description: '登録なしですぐ使える、サブスクの軽量ダッシュボードやで。',
+  applicationName: 'サブスク払ろてる',
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: 'default',
+    title: 'サブスク払ろてる',
+  },
   openGraph: {
     type: 'website',
     locale: 'ja_JP',
@@ -72,12 +80,19 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const session = await getServerSession(authOptions);
+export const viewport: Viewport = {
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#f9fafb' },
+    { media: '(prefers-color-scheme: dark)', color: '#030712' },
+  ],
+  viewportFit: 'cover',
+};
 
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="ja" className="h-full" suppressHydrationWarning>
       <head>
+        <meta name="mobile-web-app-capable" content="yes" />
         <Script id="theme-init" strategy="beforeInteractive">
           {themeInitScript}
         </Script>
@@ -101,8 +116,11 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         )}
       </head>
       <body className={`${inter.className} h-full bg-gray-50 text-gray-900 dark:bg-gray-950 dark:text-gray-100`}>
-        <SessionProvider session={session}>
+        <SessionProvider>
           <PreferencesProvider>
+            <OfflineNavigationHandler />
+            <ServiceWorkerRegistration />
+            <DevPwaPanel />
             <SubscriptionMigrationHandler />
             {children}
           </PreferencesProvider>

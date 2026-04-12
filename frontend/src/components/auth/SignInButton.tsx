@@ -1,7 +1,8 @@
 'use client';
 
-import Link from 'next/link';
 import { signIn } from 'next-auth/react';
+import { OfflineAwareLink } from '@/components/navigation/OfflineAwareLink';
+import { INSTALL_PROMPT_AFTER_GOOGLE_AUTH_KEY } from '@/features/pwa/lib/constants';
 
 interface Props {
   callbackUrl?: string;
@@ -18,21 +19,31 @@ const GoogleLogo = ({ className }: { className: string }) => (
 );
 
 export function SignInButton({ callbackUrl = '/subscriptions', compact = false }: Props) {
+  const markInstallPromptIntent = () => {
+    try {
+      sessionStorage.setItem(INSTALL_PROMPT_AFTER_GOOGLE_AUTH_KEY, 'true');
+    } catch {}
+  };
+
   if (compact) {
     return (
-      <Link
+      <OfflineAwareLink
         href={`/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`}
+        onClick={markInstallPromptIntent}
         className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md active:scale-95"
       >
         <GoogleLogo className="h-4 w-4" />
         Googleで同期する
-      </Link>
+      </OfflineAwareLink>
     );
   }
 
   return (
     <button
-      onClick={() => signIn('google', { callbackUrl })}
+      onClick={() => {
+        markInstallPromptIntent();
+        void signIn('google', { callbackUrl });
+      }}
       className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md active:scale-95"
     >
       <GoogleLogo className="h-5 w-5" />
