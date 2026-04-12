@@ -1,24 +1,5 @@
 'use client';
 
-/**
- * Development-only panel for simulating offline/online PWA behaviour.
- *
- * Returns null (no-op) in production so the import is safely tree-shaken.
- *
- * ## How it works
- *
- * Offline simulation does NOT require a service worker registration:
- *   1. `navigator.onLine` is patched via Object.defineProperty so that
- *      `window.navigator.onLine` returns false while simulation is active.
- *   2. The native `offline` / `online` Window events are dispatched so that
- *      any listeners (e.g. ServiceWorkerRegistration banners) react normally.
- *
- * The dev service worker (/sw-dev.js) is registered separately in the
- * background to additionally intercept fetches and serve cached pages.
- * It is shown as "SW: active" once ready, but the toggle always works
- * regardless of whether the SW has registered successfully.
- */
-
 import { useEffect, useRef, useState } from 'react';
 
 const DEV_SW_PATH = '/sw-dev.js';
@@ -33,10 +14,8 @@ export function DevPwaPanel() {
 function DevPwaPanelInner() {
   const [simulateOffline, setSimulateOffline] = useState(false);
   const [swStatus, setSwStatus] = useState<SwStatus>('registering');
-  // Holds the original descriptor so we can restore navigator.onLine on unmount.
   const savedDescriptorRef = useRef<PropertyDescriptor | null>(null);
 
-  // Register the dev SW in the background. The toggle works even if this fails.
   useEffect(() => {
     if (!('serviceWorker' in navigator)) {
       setSwStatus('unavailable');
@@ -63,7 +42,6 @@ function DevPwaPanelInner() {
     };
   }, []);
 
-  // Restore navigator.onLine when the component unmounts.
   useEffect(() => {
     return () => {
       if (savedDescriptorRef.current) {
@@ -77,7 +55,6 @@ function DevPwaPanelInner() {
     const next = !simulateOffline;
 
     if (next) {
-      // Save and override navigator.onLine so listeners read `false`.
       const proto = Object.getOwnPropertyDescriptor(Navigator.prototype, 'onLine');
       const own = Object.getOwnPropertyDescriptor(navigator, 'onLine');
       savedDescriptorRef.current = own ?? proto ?? null;
@@ -88,7 +65,6 @@ function DevPwaPanelInner() {
       });
       window.dispatchEvent(new Event('offline'));
     } else {
-      // Restore the original descriptor and fire online.
       if (savedDescriptorRef.current) {
         Object.defineProperty(navigator, 'onLine', savedDescriptorRef.current);
         savedDescriptorRef.current = null;
@@ -98,7 +74,6 @@ function DevPwaPanelInner() {
 
     setSimulateOffline(next);
 
-    // Optionally propagate to the SW for actual fetch interception.
     if (swStatus === 'active') {
       navigator.serviceWorker.ready
         .then((reg) =>

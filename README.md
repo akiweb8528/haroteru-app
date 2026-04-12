@@ -37,6 +37,13 @@ https://haroteru.com
   - ゲスト利用時はブラウザの localStorage
   - ログイン利用時は Backend + PostgreSQL
 
+### フロントエンドの構築方針
+
+- このプロジェクトは `SSR 中心` ではなく、`静的 shell + client hydration + PWA` を基本方針にしています
+- `/`, `/subscriptions`, `/settings`, `/auth/signin`, `/terms`, `/privacy` は build 時に静的生成し、表示速度と offline 対応を優先します
+- ログイン状態、サブスク一覧、設定など利用者ごとのデータは hydration 後に client 側で取得します
+- PWA では静的ページ shell と訪問済みルートの HTML / RSC をキャッシュし、offline 時も画面を開きやすくしています
+
 ### ログインあり PWA の設計
 
 - 認証済みユーザーでも、PWA 利用時は直近のサブスク一覧を端末にキャッシュして開けるようにしています

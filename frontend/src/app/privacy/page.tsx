@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: 'プライバシーポリシー',
   description: 'サブスク払ろてるのプライバシーポリシー。',
 };
+export const dynamic = 'force-static';
 
 const sections = [
   {
