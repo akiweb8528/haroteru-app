@@ -10,6 +10,7 @@
 /frontend/tsconfig.tsbuildinfo
 /frontend/public/sw.js
 /frontend/public/sw.js.map
+/frontend/public/workbox-*.js
 
 # env
 .env

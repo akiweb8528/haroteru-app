@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "node scripts/run-next-with-root-env.mjs dev",
-    "build": "node scripts/run-next-with-root-env.mjs build && node scripts/build-workbox.mjs",
+    "build": "node scripts/run-next-with-root-env.mjs build",
     "start": "node scripts/run-next-with-root-env.mjs start",
     "preview:pwa": "npm run build && npm run start",
     "lint": "node scripts/run-next-with-root-env.mjs lint",
@@ -24,6 +24,7 @@
     "tailwind-merge": "^2.4.0"
   },
   "devDependencies": {
+    "@ducanh2912/next-pwa": "^10.2.9",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
@@ -41,7 +42,6 @@
     "postcss": "^8.4.39",
     "tailwindcss": "^3.4.6",
     "typescript": "^5.5.3",
-    "vitest": "^4.1.2",
-    "workbox-build": "^7.4.0"
+    "vitest": "^4.1.2"
   }
 }
