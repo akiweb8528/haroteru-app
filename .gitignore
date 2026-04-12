@@ -15,6 +15,7 @@
 # env
 .env
 .env.local
+.env.*.local
 
 # log
 npm-debug.log*
@@ -26,6 +27,16 @@ tmp
 
 # etc
 docker-compose.override.yml
+
+# editor / os
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# local build tools
+.vercel/
+.turbo/
 
 # serena
 /.serena/cache/
