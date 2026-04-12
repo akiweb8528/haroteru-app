@@ -32,26 +32,36 @@ export function installOfflineFetchGuard(): () => void {
     input: RequestInfo | URL,
     init?: RequestInit,
   ): Promise<Response> {
-    if (!navigator.onLine) {
-      let isNavigationRsc = false;
-      try {
-        const headers = new Headers(init?.headers);
-        isNavigationRsc =
-          headers.get('RSC') === '1' &&
-          headers.get('Next-Router-Prefetch') !== '1';
-      } catch {
-        // Malformed headers — treat as non-RSC.
-      }
-
-      if (isNavigationRsc) {
-        const url = input instanceof Request ? input.url : String(input);
-        window.location.assign(url);
-        // Return a promise that never settles; the page navigation is in flight.
-        return new Promise<Response>(() => {});
-      }
+    let isNavigationRsc = false;
+    try {
+      const headers = new Headers(init?.headers);
+      isNavigationRsc =
+        headers.get('RSC') === '1' &&
+        headers.get('Next-Router-Prefetch') !== '1';
+    } catch {
+      // Malformed headers — treat as non-RSC.
     }
 
-    return callFetch(input, init);
+    if (!isNavigationRsc) {
+      return callFetch(input, init);
+    }
+
+    const url = input instanceof Request ? input.url : String(input);
+
+    // Fast path: browser already knows we're offline — skip the round-trip.
+    if (!navigator.onLine) {
+      window.location.assign(url);
+      return new Promise<Response>(() => {});
+    }
+
+    // Online path: let the request through (SW will NetworkFirst + cache it).
+    // If the network call fails for any reason (navigator.onLine can be stale
+    // when airplane mode is toggled), catch the error here rather than letting
+    // Next.js Router receive a rejection and render its error UI.
+    return callFetch(input, init).catch(() => {
+      window.location.assign(url);
+      return new Promise<Response>(() => {});
+    });
   };
 
   return () => {
