@@ -4,6 +4,7 @@ const { buildContentSecurityPolicy } = require('./config/security-headers');
 
 const DAY = 60 * 60 * 24;
 const BUILD_REVISION = Date.now().toString();
+const OFFLINE_FALLBACK = '/offline.html';
 const PAGE_MANIFEST_ENTRIES = [
   '/',
   '/auth/signin',
@@ -12,6 +13,10 @@ const PAGE_MANIFEST_ENTRIES = [
   '/terms',
   '/privacy',
 ].map((url) => ({ url, revision: BUILD_REVISION }));
+const PRECACHE_MANIFEST_ENTRIES = [
+  ...PAGE_MANIFEST_ENTRIES,
+  { url: OFFLINE_FALLBACK, revision: BUILD_REVISION },
+];
 
 const nextConfig = {
   async headers() {
@@ -60,9 +65,9 @@ module.exports = withPWA({
     cleanupOutdatedCaches: true,
     clientsClaim: true,
     inlineWorkboxRuntime: true,
-    navigateFallback: '/offline.html',
+    navigateFallback: OFFLINE_FALLBACK,
     navigateFallbackDenylist: [/^\/api\//],
-    additionalManifestEntries: PAGE_MANIFEST_ENTRIES,
+    additionalManifestEntries: PRECACHE_MANIFEST_ENTRIES,
     runtimeCaching: [
       {
         urlPattern: ({ request }) => request.mode === 'navigate',

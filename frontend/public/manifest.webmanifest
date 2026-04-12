@@ -1,8 +1,9 @@
 {
   "name": "サブスク払ろてる",
   "short_name": "払ろてる",
+  "id": "/",
   "description": "登録なしですぐ使える、サブスクの軽量ダッシュボードやで。",
-  "start_url": "/",
+  "start_url": "/subscriptions",
   "scope": "/",
   "display": "standalone",
   "background_color": "#f9fafb",
