@@ -1,5 +1,64 @@
 const FALLBACK_BASE_URL = 'http://localhost';
 
+/**
+ * Patches window.fetch to convert RSC navigation fetches into full-page loads
+ * when the device is offline.
+ *
+ * Next.js App Router performs client-side navigation by issuing same-origin
+ * fetch requests carrying the "RSC: 1" header.  These are not navigate-mode
+ * requests so the service worker precache does not intercept them, and they
+ * fail with a network error when offline, leaving the user stuck on an
+ * unrecoverable error screen.
+ *
+ * This guard intercepts those requests before they reach the network, converts
+ * them to full-page navigations via window.location.assign(), and returns a
+ * promise that never settles (the page load is already underway).  The service
+ * worker then serves the correct HTML from its precache — giving reliable
+ * offline navigation for every route that has been precached.
+ *
+ * Prefetch requests (Next-Router-Prefetch: 1) are intentionally excluded:
+ * they do not cause visible navigation and failing silently is fine.
+ *
+ * Returns a cleanup function that restores the original window.fetch.
+ */
+export function installOfflineFetchGuard(): () => void {
+  // Keep a reference to the original for both calling and restoring.
+  // We bind a separate copy for calling so we never pass context = undefined,
+  // but restore the un-bound original so identity checks (e.g. in tests) work.
+  const savedFetch = window.fetch;
+  const callFetch = savedFetch.bind(window);
+
+  window.fetch = function (
+    input: RequestInfo | URL,
+    init?: RequestInit,
+  ): Promise<Response> {
+    if (!navigator.onLine) {
+      let isNavigationRsc = false;
+      try {
+        const headers = new Headers(init?.headers);
+        isNavigationRsc =
+          headers.get('RSC') === '1' &&
+          headers.get('Next-Router-Prefetch') !== '1';
+      } catch {
+        // Malformed headers — treat as non-RSC.
+      }
+
+      if (isNavigationRsc) {
+        const url = input instanceof Request ? input.url : String(input);
+        window.location.assign(url);
+        // Return a promise that never settles; the page navigation is in flight.
+        return new Promise<Response>(() => {});
+      }
+    }
+
+    return callFetch(input, init);
+  };
+
+  return () => {
+    window.fetch = savedFetch;
+  };
+}
+
 type OfflineNavigationEventLike = {
   altKey?: boolean;
   button?: number;

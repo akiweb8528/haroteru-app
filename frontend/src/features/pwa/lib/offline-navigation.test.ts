@@ -1,7 +1,8 @@
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   findOfflineNavigationAnchor,
   handleOfflinePopstate,
+  installOfflineFetchGuard,
   shouldForceDocumentNavigation,
 } from '@/features/pwa/lib/offline-navigation';
 
@@ -26,6 +27,89 @@ describe('findOfflineNavigationAnchor', () => {
     const element = document.createElement('div');
 
     expect(findOfflineNavigationAnchor(element)).toBeNull();
+  });
+});
+
+describe('installOfflineFetchGuard', () => {
+  let cleanup: (() => void) | null = null;
+  const originalFetch = window.fetch;
+
+  beforeEach(() => {
+    // Restore fetch so each test starts with a known baseline.
+    window.fetch = originalFetch;
+    Object.defineProperty(navigator, 'onLine', {
+      value: true,
+      configurable: true,
+      writable: true,
+    });
+  });
+
+  afterEach(() => {
+    cleanup?.();
+    cleanup = null;
+    window.fetch = originalFetch;
+    Object.defineProperty(navigator, 'onLine', {
+      value: true,
+      configurable: true,
+      writable: true,
+    });
+  });
+
+  it('passes online fetches through to the original implementation', async () => {
+    const mock = vi.fn().mockResolvedValue(new Response('ok'));
+    window.fetch = mock;
+    cleanup = installOfflineFetchGuard();
+
+    await window.fetch('/api/subscriptions');
+    expect(mock).toHaveBeenCalledWith('/api/subscriptions', undefined);
+  });
+
+  it('calls window.location.assign for offline RSC navigation requests', () => {
+    const assign = vi.fn();
+    Object.defineProperty(window, 'location', {
+      value: { ...window.location, assign },
+      configurable: true,
+    });
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true, writable: true });
+
+    cleanup = installOfflineFetchGuard();
+    const promise = window.fetch('/settings', { headers: { RSC: '1' } });
+
+    expect(assign).toHaveBeenCalledWith('/settings');
+    // The returned promise must never settle.
+    let settled = false;
+    void promise.then(() => { settled = true; }).catch(() => { settled = true; });
+    expect(settled).toBe(false);
+  });
+
+  it('does not intercept RSC prefetch requests when offline', async () => {
+    const mock = vi.fn().mockResolvedValue(new Response('prefetch'));
+    window.fetch = mock;
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true, writable: true });
+
+    cleanup = installOfflineFetchGuard();
+    await window.fetch('/settings', { headers: { RSC: '1', 'Next-Router-Prefetch': '1' } });
+
+    expect(mock).toHaveBeenCalled();
+  });
+
+  it('does not intercept non-RSC fetches when offline', async () => {
+    const mock = vi.fn().mockResolvedValue(new Response('api'));
+    window.fetch = mock;
+    Object.defineProperty(navigator, 'onLine', { value: false, configurable: true, writable: true });
+
+    cleanup = installOfflineFetchGuard();
+    await window.fetch('/api/subscriptions');
+
+    expect(mock).toHaveBeenCalledWith('/api/subscriptions', undefined);
+  });
+
+  it('restores the original fetch when the cleanup function is called', () => {
+    const savedFetch = window.fetch;
+    const uninstall = installOfflineFetchGuard();
+    expect(window.fetch).not.toBe(savedFetch);
+    uninstall();
+    expect(window.fetch).toBe(savedFetch);
   });
 });
 
