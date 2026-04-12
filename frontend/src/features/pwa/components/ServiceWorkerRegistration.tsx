@@ -149,9 +149,7 @@ export function ServiceWorkerRegistration() {
             }
           });
         });
-      } catch {
-        // Registration failure should not block normal app usage.
-      }
+      } catch {}
     };
 
     navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);

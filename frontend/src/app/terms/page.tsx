@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   title: '利用規約',
   description: 'サブスク払ろてるの利用規約。',
 };
+export const dynamic = 'force-static';
 
 const sections = [
   {

@@ -1,30 +1,6 @@
 const FALLBACK_BASE_URL = 'http://localhost';
 
-/**
- * Patches window.fetch to convert RSC navigation fetches into full-page loads
- * when the device is offline.
- *
- * Next.js App Router performs client-side navigation by issuing same-origin
- * fetch requests carrying the "RSC: 1" header.  These are not navigate-mode
- * requests so the service worker precache does not intercept them, and they
- * fail with a network error when offline, leaving the user stuck on an
- * unrecoverable error screen.
- *
- * This guard intercepts those requests before they reach the network, converts
- * them to full-page navigations via window.location.assign(), and returns a
- * promise that never settles (the page load is already underway).  The service
- * worker then serves the correct HTML from its precache — giving reliable
- * offline navigation for every route that has been precached.
- *
- * Prefetch requests (Next-Router-Prefetch: 1) are intentionally excluded:
- * they do not cause visible navigation and failing silently is fine.
- *
- * Returns a cleanup function that restores the original window.fetch.
- */
 export function installOfflineFetchGuard(): () => void {
-  // Keep a reference to the original for both calling and restoring.
-  // We bind a separate copy for calling so we never pass context = undefined,
-  // but restore the un-bound original so identity checks (e.g. in tests) work.
   const savedFetch = window.fetch;
   const callFetch = savedFetch.bind(window);
 
@@ -38,9 +14,7 @@ export function installOfflineFetchGuard(): () => void {
       isNavigationRsc =
         headers.get('RSC') === '1' &&
         headers.get('Next-Router-Prefetch') !== '1';
-    } catch {
-      // Malformed headers — treat as non-RSC.
-    }
+    } catch {}
 
     if (!isNavigationRsc) {
       return callFetch(input, init);
@@ -48,16 +22,11 @@ export function installOfflineFetchGuard(): () => void {
 
     const url = input instanceof Request ? input.url : String(input);
 
-    // Fast path: browser already knows we're offline — skip the round-trip.
     if (!navigator.onLine) {
       window.location.assign(url);
       return new Promise<Response>(() => {});
     }
 
-    // Online path: let the request through (SW will NetworkFirst + cache it).
-    // If the network call fails for any reason (navigator.onLine can be stale
-    // when airplane mode is toggled), catch the error here rather than letting
-    // Next.js Router receive a rejection and render its error UI.
     return callFetch(input, init).catch(() => {
       window.location.assign(url);
       return new Promise<Response>(() => {});
@@ -159,24 +128,10 @@ export function shouldForceDocumentNavigation(params: {
 
   return true;
 }
-
-/**
- * Handles a popstate event (browser back / forward) while offline.
- *
- * When the user presses back or forward, Next.js handles the event and tries to
- * fetch an RSC payload for the destination URL.  If that payload is not in the
- * SW cache the navigation silently fails.  By converting the event to a full
- * document navigation here, the SW precache can serve the cached HTML page.
- *
- * Only fires when the navigator is offline to avoid forcing a full page reload
- * during normal online usage.
- */
 export function handleOfflinePopstate(online: boolean): void {
   if (online) {
     return;
   }
 
-  // The URL has already been updated by the browser before popstate fires, so
-  // window.location.href points to the destination page.
   window.location.assign(window.location.href);
 }

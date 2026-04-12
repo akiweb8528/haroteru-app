@@ -9,9 +9,6 @@ import {
 } from '@/features/pwa/lib/offline-navigation';
 
 export function OfflineNavigationHandler() {
-  // Intercept offline RSC navigation requests before they reach the network.
-  // Converts them to full-page loads so the service worker can serve the
-  // precached HTML for the target route.
   useEffect(() => {
     if (typeof window === 'undefined') return;
     return installOfflineFetchGuard();
