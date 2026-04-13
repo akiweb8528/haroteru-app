@@ -13,6 +13,12 @@ interface BeforeInstallPromptEvent extends Event {
   prompt: () => Promise<void>;
 }
 
+interface NavigatorWithUserAgentData extends Navigator {
+  readonly userAgentData?: {
+    readonly mobile?: boolean;
+  };
+}
+
 function isStandaloneDisplayMode() {
   if (typeof window === 'undefined') {
     return false;
@@ -33,6 +39,24 @@ function isIosInstallableBrowser() {
   return isIosDevice && isSafari;
 }
 
+function isMobileInstallPromptTarget() {
+  if (typeof window === 'undefined') {
+    return false;
+  }
+
+  const navigatorWithUserAgentData = window.navigator as NavigatorWithUserAgentData;
+  if (typeof navigatorWithUserAgentData.userAgentData?.mobile === 'boolean') {
+    return navigatorWithUserAgentData.userAgentData.mobile;
+  }
+
+  const userAgent = window.navigator.userAgent;
+  if (/Android|iPhone|iPad|iPod/i.test(userAgent)) {
+    return true;
+  }
+
+  return window.matchMedia('(pointer: coarse) and (hover: none)').matches;
+}
+
 function hasInstallPromptIntent() {
   try {
     return sessionStorage.getItem(INSTALL_PROMPT_AFTER_GOOGLE_AUTH_KEY) === 'true';
@@ -45,15 +69,10 @@ export function ServiceWorkerRegistration() {
   const { status } = useSession();
   const { taste } = usePreferences();
   const [isStandalone, setIsStandalone] = useState(false);
-  const [isOffline, setIsOffline] = useState(false);
-  const [updateReady, setUpdateReady] = useState(false);
-  const [reconnected, setReconnected] = useState(false);
   const [showInstallPrompt, setShowInstallPrompt] = useState(false);
   const [showIosInstallHint, setShowIosInstallHint] = useState(false);
   const registrationRef = useRef<ServiceWorkerRegistration | null>(null);
   const installPromptEventRef = useRef<BeforeInstallPromptEvent | null>(null);
-  const reconnectTimerRef = useRef<number | null>(null);
-  const hasSeenNetworkStateRef = useRef(false);
 
   const clearInstallPromptIntent = () => {
     try {
@@ -67,45 +86,15 @@ export function ServiceWorkerRegistration() {
     }
 
     const media = window.matchMedia('(display-mode: standalone)');
-    const syncOnlineState = () => {
-      setIsStandalone(isStandaloneDisplayMode());
-      const online = window.navigator.onLine;
-      setIsOffline(!online);
-      if (!hasSeenNetworkStateRef.current) {
-        hasSeenNetworkStateRef.current = true;
-        return;
-      }
-
-      if (online) {
-        setReconnected(true);
-        if (reconnectTimerRef.current) {
-          window.clearTimeout(reconnectTimerRef.current);
-        }
-        reconnectTimerRef.current = window.setTimeout(() => {
-          setReconnected(false);
-        }, 4000);
-      } else {
-        setReconnected(false);
-      }
-    };
-
-    syncOnlineState();
     const syncStandaloneState = () => {
       setIsStandalone(isStandaloneDisplayMode());
     };
 
     syncStandaloneState();
-    window.addEventListener('online', syncOnlineState);
-    window.addEventListener('offline', syncOnlineState);
     media.addEventListener('change', syncStandaloneState);
 
     return () => {
-      window.removeEventListener('online', syncOnlineState);
-      window.removeEventListener('offline', syncOnlineState);
       media.removeEventListener('change', syncStandaloneState);
-      if (reconnectTimerRef.current) {
-        window.clearTimeout(reconnectTimerRef.current);
-      }
     };
   }, []);
 
@@ -124,40 +113,51 @@ export function ServiceWorkerRegistration() {
       window.location.reload();
     };
 
+    const refreshServiceWorker = async () => {
+      const registration = registrationRef.current;
+      if (!registration || !window.navigator.onLine) {
+        return;
+      }
+
+      try {
+        await registration.update();
+      } catch {}
+    };
+
+    const handleOnline = () => {
+      void refreshServiceWorker();
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState !== 'visible') {
+        return;
+      }
+
+      void refreshServiceWorker();
+    };
+
     const registerServiceWorker = async () => {
       try {
         const registration = await navigator.serviceWorker.register('/sw.js');
-        registrationRef.current = registration;
-
-        if (registration.waiting && isMounted) {
-          setUpdateReady(true);
+        if (!isMounted) {
+          return;
         }
 
-        registration.addEventListener('updatefound', () => {
-          const installingWorker = registration.installing;
-          if (!installingWorker) {
-            return;
-          }
-
-          installingWorker.addEventListener('statechange', () => {
-            if (
-              installingWorker.state === 'installed'
-              && navigator.serviceWorker.controller
-              && isMounted
-            ) {
-              setUpdateReady(true);
-            }
-          });
-        });
+        registrationRef.current = registration;
+        void refreshServiceWorker();
       } catch {}
     };
 
     navigator.serviceWorker.addEventListener('controllerchange', handleControllerChange);
+    window.addEventListener('online', handleOnline);
+    document.addEventListener('visibilitychange', handleVisibilityChange);
     void registerServiceWorker();
 
     return () => {
       isMounted = false;
       navigator.serviceWorker.removeEventListener('controllerchange', handleControllerChange);
+      window.removeEventListener('online', handleOnline);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, []);
 
@@ -167,8 +167,10 @@ export function ServiceWorkerRegistration() {
     }
 
     const handleBeforeInstallPrompt = (event: Event) => {
-      if (!hasInstallPromptIntent() || isStandalone) {
+      if (!hasInstallPromptIntent() || isStandalone || !isMobileInstallPromptTarget()) {
         installPromptEventRef.current = null;
+        setShowInstallPrompt(false);
+        setShowIosInstallHint(false);
         return;
       }
 
@@ -210,7 +212,7 @@ export function ServiceWorkerRegistration() {
 
     try {
       const dismissed = localStorage.getItem(INSTALL_PROMPT_DISMISSED_KEY) === 'true';
-      const shouldShow = hasInstallPromptIntent() && !dismissed && !isStandalone;
+      const shouldShow = hasInstallPromptIntent() && !dismissed && !isStandalone && isMobileInstallPromptTarget();
       setShowInstallPrompt(Boolean(installPromptEventRef.current) && shouldShow);
       setShowIosInstallHint(!installPromptEventRef.current && shouldShow && isIosInstallableBrowser());
     } catch {}
@@ -248,16 +250,6 @@ export function ServiceWorkerRegistration() {
       installPromptEventRef.current = promptEvent;
     }
   };
-
-  const offlineCopy = taste === 'simple'
-    ? 'オフラインです。保存済みの画面はそのまま表示できますが、同期や更新は通信の復旧後に行われます。'
-    : 'いまはオフラインやで。保存済みの画面は見られるけど、同期や更新は電波が戻ってからや。';
-  const reconnectedCopy = taste === 'simple'
-    ? '通信が復旧しました。'
-    : '通信が戻ったで。';
-  const updateCopy = taste === 'simple'
-    ? '新しい版の準備ができました。更新すると最新のオフライン設定に切り替わります。'
-    : '新しい版の用意ができとるで。更新したらオフライン対応も最新になるわ。';
   const installCopy = taste === 'simple'
     ? {
         title: 'Google連携の次は、アプリとして追加できます。',
@@ -279,17 +271,16 @@ export function ServiceWorkerRegistration() {
       }
     : {
         title: 'iPhone は共有メニューからホームに追加できるで。',
-        description: 'Safari の共有ボタンを開いて、「ホーム画面に追加」を選んだらアプリみたいに使えるわ。',
+        description: 'Safari の共有ボタンを開いて、「ホーム画面に追加」を選んでアプリみたいに使ってや。',
         dismiss: '閉じる',
       };
-  const showNetworkStatus = isOffline || reconnected || updateReady;
 
   return (
     <>
-      {(showInstallPrompt || showIosInstallHint || showNetworkStatus) && (
+      {(showInstallPrompt || showIosInstallHint) && (
         <div className="safe-area-px pointer-events-none fixed inset-x-0 bottom-4 z-50">
           <div className="mx-auto max-w-5xl px-4">
-            {!isOffline && showInstallPrompt && (
+            {showInstallPrompt && (
               <div className="pointer-events-auto mb-3 rounded-3xl border border-brand-200 bg-white p-5 text-gray-900 shadow-2xl dark:border-brand-800/70 dark:bg-gray-900 dark:text-gray-100">
                 <p className="text-base font-semibold">{installCopy.title}</p>
                 <p className="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300">{installCopy.description}</p>
@@ -314,7 +305,7 @@ export function ServiceWorkerRegistration() {
               </div>
             )}
 
-            {!isOffline && !showInstallPrompt && showIosInstallHint && (
+            {!showInstallPrompt && showIosInstallHint && (
               <div className="pointer-events-auto mb-3 rounded-3xl border border-brand-200 bg-white p-5 text-gray-900 shadow-2xl dark:border-brand-800/70 dark:bg-gray-900 dark:text-gray-100">
                 <p className="text-base font-semibold">{iosInstallCopy.title}</p>
                 <p className="mt-2 text-sm leading-6 text-gray-600 dark:text-gray-300">{iosInstallCopy.description}</p>
@@ -325,35 +316,6 @@ export function ServiceWorkerRegistration() {
                     className="rounded-full border border-gray-200 px-4 py-2 font-semibold text-gray-600 transition hover:bg-gray-50 dark:border-gray-700 dark:text-gray-300 dark:hover:bg-gray-800"
                   >
                     {iosInstallCopy.dismiss}
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {isOffline && (
-              <div className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm text-amber-950 shadow-lg shadow-amber-200/60 dark:border-amber-700 dark:bg-amber-900/80 dark:text-amber-100 dark:shadow-none">
-                {offlineCopy}
-              </div>
-            )}
-
-            {!isOffline && !updateReady && reconnected && (
-              <div className="rounded-2xl border border-emerald-300 bg-emerald-50 px-4 py-3 text-sm text-emerald-900 shadow-lg shadow-emerald-200/50 dark:border-emerald-700 dark:bg-emerald-900/70 dark:text-emerald-100 dark:shadow-none">
-                {reconnectedCopy}
-              </div>
-            )}
-
-            {!isOffline && updateReady && (
-              <div className="pointer-events-auto rounded-2xl border border-brand-300 bg-white px-4 py-3 text-sm text-gray-900 shadow-xl dark:border-brand-700 dark:bg-gray-900 dark:text-gray-100">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <p>{updateCopy}</p>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      registrationRef.current?.waiting?.postMessage({ type: 'SKIP_WAITING' });
-                    }}
-                    className="rounded-full bg-brand-600 px-4 py-2 font-semibold text-white transition hover:bg-brand-700"
-                  >
-                    更新する
                   </button>
                 </div>
               </div>

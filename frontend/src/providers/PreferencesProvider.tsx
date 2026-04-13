@@ -35,6 +35,7 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
   const [localInitialized, setLocalInitialized] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
   const pendingThemeRef = useRef<Theme | null>(null);
+  const previousOnlineStateRef = useRef<boolean | null>(null);
 
   // Fetch from API when authenticated (shares cache with useMe hook via same key)
   const { data: me } = useSWR(
@@ -66,7 +67,16 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
     }
 
     const syncOnlineState = () => {
-      setIsOnline(window.navigator.onLine);
+      const online = window.navigator.onLine;
+      const previousOnlineState = previousOnlineStateRef.current;
+      previousOnlineStateRef.current = online;
+      setIsOnline(online);
+
+      if (previousOnlineState === false && online && session?.backendAccessToken) {
+        void userApi.me()
+          .then((next) => globalMutate(ME_KEY, next, false))
+          .catch(() => {});
+      }
     };
 
     syncOnlineState();
@@ -77,7 +87,7 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
       window.removeEventListener('online', syncOnlineState);
       window.removeEventListener('offline', syncOnlineState);
     };
-  }, []);
+  }, [session?.backendAccessToken]);
 
   // Step 2: once API data arrives, sync to local state + localStorage cache
   useEffect(() => {
