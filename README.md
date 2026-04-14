@@ -193,6 +193,25 @@ GitHub Actions の CI は `.github/workflows/ci.yml` で管理しています。
 
 CD は frontend が Vercel の branch 連携、backend は staging のみ Render Blueprint を使う前提にしています。
 
+### リリースタグの自動化
+
+`.github/workflows/release.yml` が `main` へのマージ時にセマンティックバージョンのタグを自動生成します。
+
+| マージ元ブランチ | バージョン判定 |
+|-----------------|--------------|
+| `hotfix/*` | 常に **patch** (`v1.2.3` → `v1.2.4`) |
+| その他 (`staging` など) | コミットメッセージを解析して自動判定 |
+
+コミット解析は [Conventional Commits](https://www.conventionalcommits.org/) に従います。
+
+```
+feat!: description   # → major (破壊的変更)
+feat: description    # → minor (新機能)
+fix: description     # → patch (バグ修正)
+```
+
+コミット規約の詳細は `AGENTS.md` の「コミット規約」セクションを参照してください。
+
 - `staging` ブランチ: Render staging Blueprint と Vercel staging frontend に連携
 - `main` ブランチ: Vercel production frontend に連携
 - production backend: Render ダッシュボード上の通常 Web Service を更新して運用
