@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import useSWR, { mutate as globalMutate } from 'swr';
 import { userApi } from '@/features/account/api/user-client';
@@ -22,9 +22,43 @@ const PreferencesContext = createContext<PreferencesContextValue | null>(null);
 
 const ME_KEY = 'users/me';
 
+interface PreferenceSnapshot {
+  theme: Theme;
+  useGoogleAvatar: boolean;
+  taste: CopyTaste;
+}
+
 function applyThemeToDom(theme: Theme) {
   document.documentElement.classList.toggle('dark', theme === 'dark');
   try { localStorage.setItem('theme', theme); } catch {}
+}
+
+function readPreferenceSnapshot(): PreferenceSnapshot {
+  try {
+    const storedTheme = localStorage.getItem('theme');
+    const storedAvatar = localStorage.getItem('useGoogleAvatar');
+    const storedTaste = localStorage.getItem('taste');
+
+    return {
+      theme: storedTheme === 'dark' ? 'dark' : 'light',
+      useGoogleAvatar: storedAvatar !== 'false',
+      taste: storedTaste === 'simple' ? 'simple' : 'ossan',
+    };
+  } catch {
+    return {
+      theme: 'light',
+      useGoogleAvatar: true,
+      taste: 'ossan',
+    };
+  }
+}
+
+function writePreferenceSnapshot(next: PreferenceSnapshot) {
+  try {
+    localStorage.setItem('theme', next.theme);
+    localStorage.setItem('useGoogleAvatar', String(next.useGoogleAvatar));
+    localStorage.setItem('taste', next.taste);
+  } catch {}
 }
 
 export function PreferencesProvider({ children }: { children: React.ReactNode }) {
@@ -34,15 +68,45 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
   const [taste, setTasteState] = useState<CopyTaste>('ossan');
   const [localInitialized, setLocalInitialized] = useState(false);
   const [isOnline, setIsOnline] = useState(true);
+  const [isRecoveringPreferences, setIsRecoveringPreferences] = useState(false);
   const pendingThemeRef = useRef<Theme | null>(null);
   const previousOnlineStateRef = useRef<boolean | null>(null);
 
   // Fetch from API when authenticated (shares cache with useMe hook via same key)
-  const { data: me } = useSWR(
-    session?.backendAccessToken && isOnline ? ME_KEY : null,
+  const { data: me, isValidating: isMeValidating } = useSWR(
+    session?.backendAccessToken && isOnline && !isRecoveringPreferences ? ME_KEY : null,
     () => userApi.me(),
     { revalidateOnFocus: false },
   );
+
+  const applyPreferenceSnapshot = useCallback((next: PreferenceSnapshot) => {
+    setThemeState(next.theme);
+    applyThemeToDom(next.theme);
+    setUseGoogleAvatarState(next.useGoogleAvatar);
+    setTasteState(next.taste);
+    writePreferenceSnapshot(next);
+  }, []);
+
+  const syncStoredPreferencesToServer = useCallback(async () => {
+    if (!session?.backendAccessToken) {
+      return;
+    }
+
+    const next = readPreferenceSnapshot();
+
+    try {
+      const updated = await userApi.updatePreferences(next);
+      applyPreferenceSnapshot({
+        theme: updated.theme,
+        useGoogleAvatar: updated.useGoogleAvatar,
+        taste: updated.taste,
+      });
+      await globalMutate(ME_KEY, updated, false);
+      setIsRecoveringPreferences(false);
+    } catch {
+      // Keep the local snapshot authoritative until we can sync successfully.
+    }
+  }, [applyPreferenceSnapshot, session?.backendAccessToken]);
 
   // Step 1: read localStorage on mount (before API response)
   useEffect(() => {
@@ -73,9 +137,8 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
       setIsOnline(online);
 
       if (previousOnlineState === false && online && session?.backendAccessToken) {
-        void userApi.me()
-          .then((next) => globalMutate(ME_KEY, next, false))
-          .catch(() => {});
+        setIsRecoveringPreferences(true);
+        void syncStoredPreferencesToServer();
       }
     };
 
@@ -87,25 +150,23 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
       window.removeEventListener('online', syncOnlineState);
       window.removeEventListener('offline', syncOnlineState);
     };
-  }, [session?.backendAccessToken]);
+  }, [session?.backendAccessToken, syncStoredPreferencesToServer]);
 
   // Step 2: once API data arrives, sync to local state + localStorage cache
   useEffect(() => {
-    if (!me || !localInitialized) return;
+    if (!me || !localInitialized || isMeValidating || isRecoveringPreferences) return;
 
     const serverTheme: Theme = me.theme === 'dark' ? 'dark' : 'light';
     if (pendingThemeRef.current && serverTheme !== pendingThemeRef.current) {
       return;
     }
     pendingThemeRef.current = null;
-    setThemeState(serverTheme);
-    applyThemeToDom(serverTheme);
-
-    setUseGoogleAvatarState(me.useGoogleAvatar);
-    try { localStorage.setItem('useGoogleAvatar', String(me.useGoogleAvatar)); } catch {}
-    setTasteState(me.taste === 'simple' ? 'simple' : 'ossan');
-    try { localStorage.setItem('taste', me.taste === 'simple' ? 'simple' : 'ossan'); } catch {}
-  }, [me, localInitialized]);
+    applyPreferenceSnapshot({
+      theme: serverTheme,
+      useGoogleAvatar: me.useGoogleAvatar,
+      taste: me.taste === 'simple' ? 'simple' : 'ossan',
+    });
+  }, [applyPreferenceSnapshot, isMeValidating, isRecoveringPreferences, localInitialized, me]);
 
   async function setTheme(t: Theme) {
     pendingThemeRef.current = t;
@@ -119,6 +180,7 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
       );
       const updated = await userApi.updatePreferences({ theme: t });
       await globalMutate(ME_KEY, updated, false);
+      setIsRecoveringPreferences(false);
     }
   }
 
@@ -128,6 +190,7 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
     if (session?.backendAccessToken) {
       const updated = await userApi.updatePreferences({ useGoogleAvatar: value });
       await globalMutate(ME_KEY, updated, false);
+      setIsRecoveringPreferences(false);
     }
   }
 
@@ -137,6 +200,7 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
     if (session?.backendAccessToken) {
       const updated = await userApi.updatePreferences({ taste: value });
       await globalMutate(ME_KEY, updated, false);
+      setIsRecoveringPreferences(false);
     }
   }
 
