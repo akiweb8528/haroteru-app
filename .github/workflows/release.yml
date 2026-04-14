@@ -1,0 +1,90 @@
+name: Release
+
+on:
+  pull_request:
+    types: [closed]
+    branches:
+      - main
+
+jobs:
+  release:
+    name: Create Release Tag
+    if: github.event.pull_request.merged == true
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get latest semver tag
+        id: latest_tag
+        run: |
+          tag=$(git tag -l 'v[0-9]*.[0-9]*.[0-9]*' | sort -V | tail -1)
+          echo "tag=${tag:-v0.0.0}" >> "$GITHUB_OUTPUT"
+
+      - name: Determine version bump
+        id: bump
+        env:
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+          LATEST_TAG: ${{ steps.latest_tag.outputs.tag }}
+        run: |
+          # hotfix/* → always patch
+          if [[ "$HEAD_BRANCH" == hotfix/* ]]; then
+            echo "type=patch" >> "$GITHUB_OUTPUT"
+            echo "Hotfix branch detected → patch"
+            exit 0
+          fi
+
+          # Other branches (e.g. staging) → Conventional Commits analysis
+          bump="patch"
+
+          if git rev-parse "$LATEST_TAG" > /dev/null 2>&1; then
+            log_range="${LATEST_TAG}..HEAD"
+          else
+            log_range="HEAD"
+          fi
+
+          while IFS= read -r subject; do
+            # Breaking change: type(scope)!: or BREAKING CHANGE in subject
+            if [[ "$subject" =~ ^[a-z]+(\([^)]+\))?!: ]] || echo "$subject" | grep -qF "BREAKING CHANGE"; then
+              bump="major"
+              break
+            # feat → minor (only if not already major)
+            elif [[ "$subject" =~ ^feat(\([^)]+\))?: ]] && [[ "$bump" != "major" ]]; then
+              bump="minor"
+            fi
+          done < <(git log "$log_range" --format="%s")
+
+          echo "type=$bump" >> "$GITHUB_OUTPUT"
+          echo "Conventional Commits analysis → $bump"
+
+      - name: Calculate next version
+        id: next_version
+        env:
+          CURRENT: ${{ steps.latest_tag.outputs.tag }}
+          BUMP: ${{ steps.bump.outputs.type }}
+        run: |
+          version="${CURRENT#v}"
+          IFS='.' read -r major minor patch <<< "$version"
+          major="${major:-0}"; minor="${minor:-0}"; patch="${patch:-0}"
+
+          case "$BUMP" in
+            major) major=$((major + 1)); minor=0; patch=0 ;;
+            minor) minor=$((minor + 1)); patch=0 ;;
+            patch) patch=$((patch + 1)) ;;
+          esac
+
+          next="v${major}.${minor}.${patch}"
+          echo "version=$next" >> "$GITHUB_OUTPUT"
+          echo "Next version: $CURRENT → $next ($BUMP)"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.next_version.outputs.version }}
+          name: Release ${{ steps.next_version.outputs.version }}
+          generate_release_notes: true
