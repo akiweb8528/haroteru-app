@@ -106,6 +106,17 @@ cd backend
 go run ./cmd/server
 ```
 
+## Playwright E2E
+
+frontend 配下で `npx playwright test` を実行すると、Playwright が `frontend` と `backend` を起動し、ローカル PostgreSQL へ接続して E2E を回します。
+
+- devcontainer ではそのまま `cd frontend && npx playwright test` で動かせます
+- ローカル PostgreSQL がなければ `docker compose up -d postgres` を使って立ち上げます
+- Neon を使いたい場合は `PLAYWRIGHT_E2E_DATABASE_URL` に Neon の接続 URL を入れてください
+- dev auth は Playwright 実行時に `DEV_AUTH_ENABLED=true` と `DEV_AUTH_CODE=playwright-dev-code` を使います
+
+CI でも同じ構成で動き、`E2E_DATABASE_URL` が設定されていれば Neon を使い、未設定ならローカル PostgreSQL にフォールバックします。
+
 ## 本番 DB / デプロイ
 
 本番 DB は Neon を前提にしています。`DATABASE_URL` には Neon が発行する接続 URL をそのまま設定してください。
@@ -190,6 +201,7 @@ GitHub Actions の CI は `.github/workflows/ci.yml` で管理しています。
 - 対象ブランチ: `main`, `staging`
 - backend: `go test ./...`
 - frontend: `npm ci`, `npm run type-check`, `npm test`
+- e2e: `npm ci`, `npx playwright install --with-deps chromium`, `npm run test:e2e`
 
 CD は frontend が Vercel の branch 連携、backend は staging のみ Render Blueprint を使う前提にしています。
 
