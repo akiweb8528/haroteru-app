@@ -1,0 +1,142 @@
+name: Cleanup Merged Branches
+
+on:
+  schedule:
+    - cron: '0 3 * * 1'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pull-requests: read
+
+jobs:
+  delete-merged-branches:
+    name: Delete merged branches
+    runs-on: ubuntu-latest
+    steps:
+      - name: Remove merged branches older than 7 days
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const repoFullName = `${context.repo.owner}/${context.repo.repo}`
+            const protectedBranches = new Set(['main', 'staging', context.payload.repository?.default_branch ?? 'main'])
+            const retentionDays = 7
+            const retentionMs = retentionDays * 24 * 60 * 60 * 1000
+            const cutoff = new Date(Date.now() - retentionMs)
+            const listPulls = (state, base) =>
+              github.paginate(github.rest.pulls.list, {
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                state,
+                base,
+                per_page: 100,
+              })
+
+            core.notice(`Cleanup cutoff: ${cutoff.toISOString()}`)
+
+            const [openMain, openStaging, closedMain, closedStaging] = await Promise.all([
+              listPulls('open', 'main'),
+              listPulls('open', 'staging'),
+              listPulls('closed', 'main'),
+              listPulls('closed', 'staging'),
+            ])
+
+            const openBranches = new Set()
+            for (const pull of [...openMain, ...openStaging]) {
+              if (pull.head?.repo?.full_name !== repoFullName) {
+                continue
+              }
+
+              const branch = pull.head?.ref
+              if (!branch) {
+                continue
+              }
+
+              openBranches.add(branch)
+            }
+
+            const latestMergedByBranch = new Map()
+            for (const pull of [...closedMain, ...closedStaging]) {
+              if (!pull.merged_at) {
+                continue
+              }
+
+              if (pull.head?.repo?.full_name !== repoFullName) {
+                continue
+              }
+
+              const branch = pull.head?.ref
+              if (!branch) {
+                continue
+              }
+
+              if (protectedBranches.has(branch)) {
+                continue
+              }
+
+              const mergedAt = new Date(pull.merged_at)
+              if (Number.isNaN(mergedAt.getTime()) || mergedAt > cutoff) {
+                continue
+              }
+
+              const current = latestMergedByBranch.get(branch)
+              if (!current || mergedAt > current.mergedAt) {
+                latestMergedByBranch.set(branch, {
+                  mergedAt,
+                  pullNumber: pull.number,
+                })
+              }
+            }
+
+            if (latestMergedByBranch.size === 0) {
+              core.notice('No merged branches are old enough to remove.')
+              return
+            }
+
+            for (const [branch, info] of latestMergedByBranch) {
+              if (openBranches.has(branch)) {
+                core.notice(`Skip active branch with an open PR: ${branch} (#${info.pullNumber})`)
+                continue
+              }
+
+              try {
+                const { data: branchInfo } = await github.rest.repos.getBranch({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  branch,
+                })
+
+                if (branchInfo.protected) {
+                  core.notice(`Skip GitHub-protected branch: ${branch}`)
+                  continue
+                }
+              } catch (error) {
+                if (error.status === 404) {
+                  core.notice(`Branch already deleted: ${branch}`)
+                  continue
+                }
+
+                throw error
+              }
+
+              try {
+                await github.rest.git.deleteRef({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  ref: `heads/${branch}`,
+                })
+                core.notice(`Deleted merged branch: ${branch} (#${info.pullNumber})`)
+              } catch (error) {
+                if (error.status === 404) {
+                  core.notice(`Branch already deleted: ${branch}`)
+                  continue
+                }
+
+                if (error.status === 422) {
+                  core.warning(`GitHub refused to delete branch: ${branch}`)
+                  continue
+                }
+
+                throw error
+              }
+            }

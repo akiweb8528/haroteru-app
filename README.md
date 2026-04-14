@@ -193,6 +193,8 @@ GitHub Actions の CI は `.github/workflows/ci.yml` で管理しています。
 
 CD は frontend が Vercel の branch 連携、backend は staging のみ Render Blueprint を使う前提にしています。
 
+- `cleanup-merged-branches.yml` は毎週月曜 03:00 UTC に動き、`main` / `staging` 以外でマージから 7 日以上経った一時ブランチを自動削除します。
+
 ### リリースタグの自動化
 
 `.github/workflows/release.yml` が `main` へのマージ時にセマンティックバージョンのタグを自動生成します。
@@ -215,6 +217,8 @@ fix: description     # → patch (バグ修正)
 - `staging` ブランチ: Render staging Blueprint と Vercel staging frontend に連携
 - `main` ブランチ: Vercel production frontend に連携
 - production backend: Render ダッシュボード上の通常 Web Service を更新して運用
+
+`hotfix/*` が `main` に入ったときだけは、`main -> staging` の同期 PR を自動で作成し、CI 通過かつコンフリクトなしなら自動マージします。
 
 このため、基本運用は次の形です。
 

@@ -1,0 +1,92 @@
+name: Merge Main to Staging
+
+on:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  merge-sync-pr:
+    name: Merge sync PR after CI
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.head_branch == 'main'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Merge the open main -> staging sync PR when it is clean
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo
+            const repoFullName = `${owner}/${repo}`
+
+            const { data: openPulls } = await github.rest.pulls.list({
+              owner,
+              repo,
+              state: 'open',
+              base: 'staging',
+              per_page: 100,
+            })
+
+            const pullRequest = openPulls.find((pull) =>
+              pull.head?.ref === 'main' &&
+              pull.head?.repo?.full_name === repoFullName
+            )
+
+            if (!pullRequest) {
+              core.notice('No open main -> staging sync PR was found.')
+              return
+            }
+
+            const pullNumber = pullRequest.number
+            const maxAttempts = 10
+
+            let current = null
+            for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+              const { data } = await github.rest.pulls.get({
+                owner,
+                repo,
+                pull_number: pullNumber,
+              })
+
+              current = data
+
+              if (current.mergeable !== null) {
+                break
+              }
+
+              core.notice(`Waiting for mergeability check: #${pullNumber} (attempt ${attempt}/${maxAttempts})`)
+              await new Promise((resolve) => setTimeout(resolve, 3000))
+            }
+
+            if (!current || current.mergeable === null) {
+              core.notice(`Mergeability is still pending for PR #${pullNumber}.`)
+              return
+            }
+
+            if (!current.mergeable) {
+              core.notice(`Skip PR #${pullNumber} because GitHub reports merge conflicts.`)
+              return
+            }
+
+            try {
+              const { data: mergedPull } = await github.rest.pulls.merge({
+                owner,
+                repo,
+                pull_number: pullNumber,
+                merge_method: 'merge',
+              })
+
+              core.notice(`Merged sync PR #${pullNumber}: ${mergedPull.sha}`)
+            } catch (error) {
+              if (error.status === 404) {
+                core.notice(`Sync PR #${pullNumber} was already closed before merge.`)
+                return
+              }
+
+              throw error
+            }
