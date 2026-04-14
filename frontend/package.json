@@ -9,6 +9,7 @@
     "preview:pwa": "npm run build && npm run start",
     "lint": "node scripts/run-next-with-root-env.mjs lint",
     "type-check": "tsc --noEmit",
+    "test:e2e": "playwright test",
     "test": "vitest run",
     "test:watch": "vitest"
   },
@@ -25,6 +26,7 @@
   },
   "devDependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
+    "@playwright/test": "^1.55.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",

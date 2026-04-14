@@ -14,7 +14,7 @@ permissions:
 jobs:
   merge-sync-pr:
     name: Merge sync PR after CI
-    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'pull_request' && github.event.workflow_run.head_branch == 'main'
+    if: github.event.workflow_run.conclusion == 'success' && github.event.workflow_run.event == 'push' && github.event.workflow_run.head_branch == 'main'
     runs-on: ubuntu-latest
     steps:
       - name: Merge the open main -> staging sync PR when it is clean

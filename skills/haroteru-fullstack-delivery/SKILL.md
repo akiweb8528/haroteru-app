@@ -51,6 +51,10 @@ description: Full-stack implementation guidance for サブスク払ろてる. Us
 - `backend/internal/middleware/security.go`
 - `README.md`
 
+## Inspect First For Test Work
+
+- `frontend/src/**/*.{test,spec}.{ts,tsx}` は Vitest の対象、`frontend/e2e/**/*.spec.ts` は Playwright E2E の対象として分けて扱う
+
 ## Typical Workflow
 
 1. 必要なら `haroteru-product` skill で前提を確認する

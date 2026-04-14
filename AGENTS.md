@@ -41,9 +41,15 @@
 
 ## Verification
 
-- Frontend: `cd frontend && npm run lint && npm run type-check && npm test`
+- Frontend unit/component: `cd frontend && npm run lint && npm run type-check && npm test`
+- Frontend E2E: `cd frontend && npm run test:e2e`
 - Backend: `cd backend && go test ./...`
 - UI 変更は mobile での見え方とスクロール位置も確認する
+
+## Test Boundaries
+
+- unit/component test は `frontend/src/**/*.{test,spec}.{ts,tsx}` に寄せる
+- Playwright E2E は `frontend/e2e/**/*.spec.ts` に寄せる
 
 ## Git Workflow
 
