@@ -20,6 +20,7 @@ jobs:
       - name: Merge the open main -> staging sync PR when it is clean
         uses: actions/github-script@v7
         with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
             const { owner, repo } = context.repo
             const repoFullName = `${owner}/${repo}`
