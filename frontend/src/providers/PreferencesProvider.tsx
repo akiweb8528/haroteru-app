@@ -8,6 +8,12 @@ import type { CopyTaste } from '@/lib/taste';
 
 export type Theme = 'light' | 'dark';
 
+// Module-level flag so useMe can skip fetching while offline recovery is in progress.
+// Set synchronously in the 'online' event handler (before React processes state updates)
+// so that useMe's SWR key computation sees it immediately on re-render.
+let _isRecoveringPreferences = false;
+export function getIsRecoveringPreferences() { return _isRecoveringPreferences; }
+
 interface PreferencesContextValue {
   theme: Theme;
   useGoogleAvatar: boolean;
@@ -70,6 +76,8 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
   const [isOnline, setIsOnline] = useState(true);
   const [isRecoveringPreferences, setIsRecoveringPreferences] = useState(false);
   const pendingThemeRef = useRef<Theme | null>(null);
+  const pendingAvatarRef = useRef<boolean | null>(null);
+  const pendingTasteRef = useRef<CopyTaste | null>(null);
   const previousOnlineStateRef = useRef<boolean | null>(null);
 
   // Fetch from API when authenticated (shares cache with useMe hook via same key)
@@ -102,6 +110,7 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
         taste: updated.taste,
       });
       await globalMutate(ME_KEY, updated, false);
+      _isRecoveringPreferences = false;
       setIsRecoveringPreferences(false);
     } catch {
       // Keep the local snapshot authoritative until we can sync successfully.
@@ -137,6 +146,9 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
       setIsOnline(online);
 
       if (previousOnlineState === false && online && session?.backendAccessToken) {
+        // Set module-level flag synchronously so useMe's SWR key computation
+        // sees it on the same render cycle triggered by setIsOnline(true).
+        _isRecoveringPreferences = true;
         setIsRecoveringPreferences(true);
         void syncStoredPreferencesToServer();
       }
@@ -152,21 +164,34 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
     };
   }, [session?.backendAccessToken, syncStoredPreferencesToServer]);
 
-  // Step 2: once API data arrives, sync to local state + localStorage cache
+  // Step 2: once API data arrives, sync to local state + localStorage cache.
+  // Each preference is applied independently: skip fields with a pending local
+  // change whose value differs from what the server returned, so that rapid
+  // sequential edits (e.g. avatar → taste → theme) don't cause flickering.
   useEffect(() => {
     if (!me || !localInitialized || isMeValidating || isRecoveringPreferences) return;
 
     const serverTheme: Theme = me.theme === 'dark' ? 'dark' : 'light';
-    if (pendingThemeRef.current && serverTheme !== pendingThemeRef.current) {
-      return;
+    const serverTaste: CopyTaste = me.taste === 'simple' ? 'simple' : 'ossan';
+
+    if (pendingThemeRef.current === null || serverTheme === pendingThemeRef.current) {
+      pendingThemeRef.current = null;
+      setThemeState(serverTheme);
+      applyThemeToDom(serverTheme);
     }
-    pendingThemeRef.current = null;
-    applyPreferenceSnapshot({
-      theme: serverTheme,
-      useGoogleAvatar: me.useGoogleAvatar,
-      taste: me.taste === 'simple' ? 'simple' : 'ossan',
-    });
-  }, [applyPreferenceSnapshot, isMeValidating, isRecoveringPreferences, localInitialized, me]);
+
+    if (pendingAvatarRef.current === null || me.useGoogleAvatar === pendingAvatarRef.current) {
+      pendingAvatarRef.current = null;
+      setUseGoogleAvatarState(me.useGoogleAvatar);
+      try { localStorage.setItem('useGoogleAvatar', String(me.useGoogleAvatar)); } catch {}
+    }
+
+    if (pendingTasteRef.current === null || serverTaste === pendingTasteRef.current) {
+      pendingTasteRef.current = null;
+      setTasteState(serverTaste);
+      try { localStorage.setItem('taste', serverTaste); } catch {}
+    }
+  }, [isMeValidating, isRecoveringPreferences, localInitialized, me]);
 
   async function setTheme(t: Theme) {
     pendingThemeRef.current = t;
@@ -185,6 +210,7 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
   }
 
   async function setUseGoogleAvatar(value: boolean) {
+    pendingAvatarRef.current = value;
     setUseGoogleAvatarState(value);
     try { localStorage.setItem('useGoogleAvatar', String(value)); } catch {}
     if (session?.backendAccessToken) {
@@ -195,6 +221,7 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
   }
 
   async function setTaste(value: CopyTaste) {
+    pendingTasteRef.current = value;
     setTasteState(value);
     try { localStorage.setItem('taste', value); } catch {}
     if (session?.backendAccessToken) {
@@ -207,6 +234,8 @@ export function PreferencesProvider({ children }: { children: React.ReactNode })
   // Used on sign-out: resets local state/DOM without calling API
   function resetPreferences() {
     pendingThemeRef.current = null;
+    pendingAvatarRef.current = null;
+    pendingTasteRef.current = null;
     setThemeState('light');
     setUseGoogleAvatarState(true);
     setTasteState('ossan');
