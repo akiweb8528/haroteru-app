@@ -1,96 +1,73 @@
-import { expect, request, test } from '@playwright/test';
-import type { APIRequestContext } from '@playwright/test';
+import { expect, test, type APIRequestContext } from '@playwright/test';
+import {
+  createAuthedApiContext,
+  createSubscription,
+  devAuthEmail,
+  fetchMe,
+  fetchSubscriptions,
+  fillSubscriptionForm,
+  resetSubscriptions,
+  setTaste,
+  signInWithDevAuth,
+  subscriptionCard,
+  subscriptionCardHeadings,
+  submitSubscriptionForm,
+} from './e2e-helpers';
 
-type DevAuthResponse = {
-  access_token: string;
-  refresh_token: string;
-  user: {
-    id: string;
-    email: string;
-    name: string;
-    avatarUrl: string;
-    tier: 'free' | 'pro';
+test.describe('authenticated subscription dashboard', () => {
+  let api: APIRequestContext | undefined;
+
+  const getApi = (): APIRequestContext => {
+    if (!api) {
+      throw new Error('API context is not ready');
+    }
+
+    return api;
   };
-};
 
-type Subscription = {
-  id: string;
-  name: string;
-  amountYen: number;
-  note: string;
-  locked: boolean;
-};
+  test.beforeEach(async () => {
+    api = await createAuthedApiContext();
+    await resetSubscriptions(api);
+    await setTaste(api, 'ossan');
+  });
 
-const backendUrl = process.env.PLAYWRIGHT_BACKEND_URL || 'http://127.0.0.1:8080';
-const devAuthCode = process.env.PLAYWRIGHT_E2E_DEV_AUTH_CODE || 'playwright-dev-code';
-const devAuthEmail = process.env.PLAYWRIGHT_E2E_DEV_AUTH_EMAIL || 'playwright-e2e@haroteru.local';
+  test.afterEach(async () => {
+    if (!api) {
+      return;
+    }
 
-async function createAuthedApiContext(): Promise<APIRequestContext> {
-  const authContext = await request.newContext({ baseURL: backendUrl });
-  try {
-    const response = await authContext.post('/api/v1/auth/dev', {
-      data: { code: devAuthCode },
-    });
+    await resetSubscriptions(api);
+    await api.dispose();
+    api = undefined;
+  });
 
-    expect(response.ok()).toBeTruthy();
-    const body = await response.json() as DevAuthResponse;
+  test('adds and deletes a subscription while the backend stays in sync', async ({ page }) => {
+    const apiContext = getApi();
+    const subscriptionName = `Playwright E2E ${Date.now()}`;
+    const note = `created through Playwright ${subscriptionName}`;
 
-    return await request.newContext({
-      baseURL: backendUrl,
-      extraHTTPHeaders: {
-        Authorization: `Bearer ${body.access_token}`,
-        'Content-Type': 'application/json',
-      },
-    });
-  } finally {
-    await authContext.dispose();
-  }
-}
+    const meBefore = await fetchMe(apiContext);
+    expect(meBefore.email).toBe(devAuthEmail);
+    expect(meBefore.summary.subscriptionCount).toBe(0);
 
-async function fetchSubscriptions(api: APIRequestContext): Promise<Subscription[]> {
-  const response = await api.get('/api/v1/subscriptions?limit=1000&sort=position&order=asc');
-  expect(response.ok()).toBeTruthy();
-  const body = await response.json() as { data: Subscription[] };
-  return body.data;
-}
-
-test('dev auth, UI creation, API verification, and UI deletion stay in sync', async ({ page }) => {
-  const api = await createAuthedApiContext();
-  const subscriptionName = `Playwright E2E ${Date.now()}`;
-  const note = `created through Playwright ${subscriptionName}`;
-
-  try {
-    const meBefore = await api.get('/api/v1/users/me');
-    expect(meBefore.ok()).toBeTruthy();
-    const meBeforeBody = await meBefore.json() as {
-      email: string;
-      summary: { subscriptionCount: number };
-    };
-    expect(meBeforeBody.email).toBe(devAuthEmail);
-    expect(meBeforeBody.summary.subscriptionCount).toBe(0);
-
-    await page.goto('/auth/signin?callbackUrl=%2Fsubscriptions');
-    await page.getByLabel('検証コード').fill(devAuthCode);
-    await page.getByRole('button', { name: '検証用でサインイン' }).click();
-    await page.waitForURL(/\/subscriptions$/);
+    await signInWithDevAuth(page);
 
     await expect(page.getByRole('button', { name: 'サブスクを追加' }).first()).toBeVisible();
 
     await page.getByRole('button', { name: 'サブスクを追加' }).first().click();
-    await expect(page.getByLabel('サービス名')).toBeVisible();
+    await fillSubscriptionForm(page, {
+      name: subscriptionName,
+      amountYen: 980,
+      billingCycle: 'monthly',
+      category: 'video',
+      note,
+    });
+    await submitSubscriptionForm(page);
 
-    await page.getByLabel('サービス名').fill(subscriptionName);
-    await page.getByLabel('金額').fill('980');
-    await page.getByLabel('支払い頻度').selectOption('monthly');
-    await page.getByLabel('カテゴリ').selectOption('video');
-    await page.getByLabel('メモ').fill(note);
-
-    await page.locator('form').getByRole('button', { name: 'サブスクを追加' }).click();
-
-    const card = page.locator('[data-subscription-card-id]').filter({ hasText: subscriptionName });
+    const card = subscriptionCard(page, subscriptionName);
     await expect(card).toBeVisible();
 
-    const subscriptionsAfterCreate = await fetchSubscriptions(api);
+    const subscriptionsAfterCreate = await fetchSubscriptions(apiContext);
     expect(subscriptionsAfterCreate).toHaveLength(1);
 
     const created = subscriptionsAfterCreate[0];
@@ -99,39 +76,121 @@ test('dev auth, UI creation, API verification, and UI deletion stay in sync', as
     expect(created.note).toBe(note);
     expect(created.locked).toBe(false);
 
-    const createdById = await api.get(`/api/v1/subscriptions/${created.id}`);
+    const createdById = await apiContext.get(`/api/v1/subscriptions/${created.id}`);
     expect(createdById.ok()).toBeTruthy();
-    const createdByIdBody = await createdById.json() as Subscription;
+    const createdByIdBody = await createdById.json() as {
+      id: string;
+      name: string;
+    };
     expect(createdByIdBody.name).toBe(subscriptionName);
 
-    const meAfterCreate = await api.get('/api/v1/users/me');
-    expect(meAfterCreate.ok()).toBeTruthy();
-    const meAfterCreateBody = await meAfterCreate.json() as {
-      summary: { subscriptionCount: number };
-    };
-    expect(meAfterCreateBody.summary.subscriptionCount).toBe(1);
+    const meAfterCreate = await fetchMe(apiContext);
+    expect(meAfterCreate.summary.subscriptionCount).toBe(1);
 
     await page.reload();
-    await expect(page.locator('[data-subscription-card-id]').filter({ hasText: subscriptionName })).toBeVisible();
+    await expect(card).toBeVisible();
 
     await card.getByRole('button', { name: '削除' }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
     await page.getByRole('button', { name: '削除する' }).click();
-    await expect(page.locator('[data-subscription-card-id]').filter({ hasText: subscriptionName })).toHaveCount(0);
+    await expect(subscriptionCard(page, subscriptionName)).toHaveCount(0);
 
-    const subscriptionsAfterDelete = await fetchSubscriptions(api);
+    const subscriptionsAfterDelete = await fetchSubscriptions(apiContext);
     expect(subscriptionsAfterDelete).toHaveLength(0);
 
-    const deletedById = await api.get(`/api/v1/subscriptions/${created.id}`);
+    const deletedById = await apiContext.get(`/api/v1/subscriptions/${created.id}`);
     expect(deletedById.status()).toBe(404);
 
-    const meAfterDelete = await api.get('/api/v1/users/me');
-    expect(meAfterDelete.ok()).toBeTruthy();
-    const meAfterDeleteBody = await meAfterDelete.json() as {
-      summary: { subscriptionCount: number };
+    const meAfterDelete = await fetchMe(apiContext);
+    expect(meAfterDelete.summary.subscriptionCount).toBe(0);
+  });
+
+  test('filters to a locked subscription and edits it from the list', async ({ page }) => {
+    const apiContext = getApi();
+    const netflix = await createSubscription(apiContext, {
+      name: 'Netflix',
+      amountYen: 1490,
+      billingCycle: 'monthly',
+      category: 'video',
+      note: '休日に見るやつ',
+    });
+    const spotify = await createSubscription(apiContext, {
+      name: 'Spotify',
+      amountYen: 980,
+      billingCycle: 'yearly',
+      category: 'music',
+      locked: true,
+      note: '通勤中に聴くやつ',
+    });
+
+    await signInWithDevAuth(page);
+
+    await expect(subscriptionCard(page, netflix.name)).toBeVisible();
+    await expect(subscriptionCard(page, spotify.name)).toBeVisible();
+
+    await page.getByRole('button', { name: 'ロック中' }).click();
+
+    await expect(subscriptionCard(page, spotify.name)).toBeVisible();
+    await expect(subscriptionCard(page, netflix.name)).toHaveCount(0);
+
+    await page.getByRole('button', { name: '編集' }).click();
+    await fillSubscriptionForm(page, {
+      name: spotify.name,
+      amountYen: spotify.amountYen,
+      billingCycle: spotify.billingCycle,
+      category: 'music',
+      note: '家族で共有しているやつ',
+    });
+    await submitSubscriptionForm(page, '変更を保存');
+
+    await expect(subscriptionCard(page, spotify.name)).toBeVisible();
+    await expect(page.getByText('家族で共有しているやつ')).toBeVisible();
+
+    const updated = await apiContext.get(`/api/v1/subscriptions/${spotify.id}`);
+    expect(updated.ok()).toBeTruthy();
+    const updatedBody = await updated.json() as {
+      id: string;
+      note: string;
     };
-    expect(meAfterDeleteBody.summary.subscriptionCount).toBe(0);
-  } finally {
-    await api.dispose();
-  }
+    expect(updatedBody.note).toBe('家族で共有しているやつ');
+  });
+
+  test('reorders cards by drag-and-drop and keeps the new order after reload', async ({ page }) => {
+    const apiContext = getApi();
+    await createSubscription(apiContext, {
+      name: 'Alpha',
+      amountYen: 500,
+      billingCycle: 'monthly',
+      category: 'video',
+      note: 'alpha note',
+    });
+    await createSubscription(apiContext, {
+      name: 'Beta',
+      amountYen: 1000,
+      billingCycle: 'monthly',
+      category: 'music',
+      note: 'beta note',
+    });
+    await createSubscription(apiContext, {
+      name: 'Gamma',
+      amountYen: 1500,
+      billingCycle: 'monthly',
+      category: 'learning',
+      note: 'gamma note',
+    });
+
+    await signInWithDevAuth(page);
+
+    await expect(subscriptionCardHeadings(page)).toHaveText(['Alpha', 'Beta', 'Gamma']);
+
+    await page.getByRole('button', { name: 'ドラッグして並び替える' }).nth(2).dragTo(subscriptionCard(page, 'Alpha'));
+
+    await expect(subscriptionCardHeadings(page)).toHaveText(['Gamma', 'Alpha', 'Beta']);
+
+    const reordered = await fetchSubscriptions(apiContext);
+    expect(reordered.map((item) => item.name)).toEqual(['Gamma', 'Alpha', 'Beta']);
+
+    await page.reload();
+    await expect(subscriptionCardHeadings(page)).toHaveText(['Gamma', 'Alpha', 'Beta']);
+  });
 });
