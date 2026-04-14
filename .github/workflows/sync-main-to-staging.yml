@@ -1,0 +1,75 @@
+name: Sync Main to Staging
+
+on:
+  pull_request:
+    types:
+      - closed
+    branches:
+      - main
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  create-sync-pr:
+    name: Create sync PR
+    if: github.event.pull_request.merged == true && startsWith(github.event.pull_request.head.ref, 'hotfix/')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Open or reuse the main -> staging sync PR
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const { owner, repo } = context.repo
+            const sourceBranch = 'main'
+            const targetBranch = 'staging'
+            const repoFullName = `${owner}/${repo}`
+            const mergedHotfix = context.payload.pull_request.head.ref
+
+            const { data: openPulls } = await github.rest.pulls.list({
+              owner,
+              repo,
+              state: 'open',
+              base: targetBranch,
+              per_page: 100,
+            })
+
+            const existing = openPulls.find((pull) =>
+              pull.head?.ref === sourceBranch &&
+              pull.head?.repo?.full_name === repoFullName
+            )
+
+            if (existing) {
+              core.notice(`Sync PR already open: #${existing.number}`)
+              return
+            }
+
+            try {
+              const { data: pullRequest } = await github.rest.pulls.create({
+                owner,
+                repo,
+                title: 'chore(sync): sync main into staging',
+                head: sourceBranch,
+                base: targetBranch,
+                body: [
+                  `Automated sync after merging \`${mergedHotfix}\` into \`main\`.`,
+                  '',
+                  'This PR will be merged automatically after the CI workflow passes and no conflicts are detected.',
+                ].join('\n'),
+              })
+
+              core.notice(`Created sync PR: #${pullRequest.number}`)
+            } catch (error) {
+              const message = `${error.message ?? error.response?.data?.message ?? ''}`
+
+              if (error.status === 422 && (
+                message.includes('No commits between') ||
+                message.includes('A pull request already exists')
+              )) {
+                core.notice('No sync PR created: main is already aligned with staging, or GitHub already has an equivalent open PR.')
+                return
+              }
+
+              throw error
+            }
