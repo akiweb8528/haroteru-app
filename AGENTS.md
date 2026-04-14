@@ -77,8 +77,6 @@
 ```
 feat!: 認証フローを刷新
 fix(api)!: レスポンス形式を変更
-
-BREAKING CHANGE: /subscriptions のレスポンスキー名が変わりました
 ```
 
 ### バージョン自動判定ルール
@@ -91,7 +89,7 @@ BREAKING CHANGE: /subscriptions のレスポンスキー名が変わりました
 | その他 (`staging` など) | コミット解析 | — |
 | └ `fix:` のみ含む | patch | `v1.2.3` → `v1.2.4` |
 | └ `feat:` を含む | minor | `v1.2.3` → `v1.3.0` |
-| └ `!` / `BREAKING CHANGE` を含む | major | `v1.2.3` → `v2.0.0` |
+| └ `!` を含む | major | `v1.2.3` → `v2.0.0` |
 
 ## Skills
 

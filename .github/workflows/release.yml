@@ -49,8 +49,8 @@ jobs:
           fi
 
           while IFS= read -r subject; do
-            # Breaking change: type(scope)!: or BREAKING CHANGE in subject
-            if [[ "$subject" =~ ^[a-z]+(\([^)]+\))?!: ]] || echo "$subject" | grep -qF "BREAKING CHANGE"; then
+            # Breaking change: type(scope)!: in subject
+            if [[ "$subject" =~ ^[a-z]+(\([^)]+\))?!: ]]; then
               bump="major"
               break
             # feat → minor (only if not already major)
