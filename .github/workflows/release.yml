@@ -32,6 +32,9 @@ jobs:
           HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
           LATEST_TAG: ${{ steps.latest_tag.outputs.tag }}
         run: |
+          major_pattern='^[a-z]+(\([^)]+\))?!:'
+          minor_pattern='^feat(\([^)]+\))?:'
+
           # hotfix/* → always patch
           if [[ "$HEAD_BRANCH" == hotfix/* ]]; then
             echo "type=patch" >> "$GITHUB_OUTPUT"
@@ -50,11 +53,11 @@ jobs:
 
           while IFS= read -r subject; do
             # Breaking change: type(scope)!: in subject
-            if [[ "$subject" =~ ^[a-z]+(\([^)]+\))?!: ]]; then
+            if [[ "$subject" =~ $major_pattern ]]; then
               bump="major"
               break
             # feat → minor (only if not already major)
-            elif [[ "$subject" =~ ^feat(\([^)]+\))?: ]] && [[ "$bump" != "major" ]]; then
+            elif [[ "$subject" =~ $minor_pattern ]] && [[ "$bump" != "major" ]]; then
               bump="minor"
             fi
           done < <(git log "$log_range" --format="%s")
