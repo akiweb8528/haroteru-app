@@ -40,13 +40,25 @@ function buildConnectSrc({ apiUrl, fallbackApiUrl = DEFAULT_API_FALLBACK_URL } =
 }
 
 function buildContentSecurityPolicy({ apiUrl, fallbackApiUrl = DEFAULT_API_FALLBACK_URL } = {}) {
+  const isDevelopmentLike = process.env.NODE_ENV !== 'production';
+  const scriptSrc = [
+    "'self'",
+    "'unsafe-inline'",
+    'https://www.googletagmanager.com',
+    isDevelopmentLike ? "'unsafe-eval'" : null,
+  ].filter(Boolean).join(' ');
+  const connectSrc = [
+    buildConnectSrc({ apiUrl, fallbackApiUrl }),
+    isDevelopmentLike ? 'ws: wss:' : null,
+  ].filter(Boolean).join(' ');
+
   return [
     "default-src 'self'",
-    "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com",
+    `script-src ${scriptSrc}`,
     "style-src 'self' 'unsafe-inline'",
     "img-src 'self' data: blob: https://lh3.googleusercontent.com",
     "font-src 'self'",
-    `connect-src ${buildConnectSrc({ apiUrl, fallbackApiUrl })}`,
+    `connect-src ${connectSrc}`,
     "frame-ancestors 'none'",
     "object-src 'none'",
     "base-uri 'self'",
