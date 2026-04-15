@@ -43,4 +43,18 @@ describe('buildContentSecurityPolicy', () => {
     expect(csp).toContain("connect-src 'self'");
     expect(csp).toContain('https://haroteru-backend-staging.onrender.com');
   });
+
+  it('allows Next.js dev runtime only outside production', () => {
+    const previousNodeEnv = process.env.NODE_ENV;
+    process.env.NODE_ENV = 'development';
+
+    try {
+      const csp = buildContentSecurityPolicy();
+      expect(csp).toContain("script-src 'self' 'unsafe-inline' https://www.googletagmanager.com 'unsafe-eval'");
+      expect(csp).toContain('connect-src');
+      expect(csp).toContain('ws: wss:');
+    } finally {
+      process.env.NODE_ENV = previousNodeEnv;
+    }
+  });
 });

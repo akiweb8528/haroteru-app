@@ -56,6 +56,8 @@ type CreateSubscriptionInput = {
 const backendUrl = process.env.PLAYWRIGHT_BACKEND_URL || 'http://127.0.0.1:8080';
 const devAuthCode = process.env.PLAYWRIGHT_E2E_DEV_AUTH_CODE || 'playwright-dev-code';
 export const devAuthEmail = process.env.PLAYWRIGHT_E2E_DEV_AUTH_EMAIL || 'playwright-e2e@haroteru.local';
+const defaultEventuallyTimeoutMs = 15_000;
+const defaultEventuallyIntervalMs = 250;
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -104,9 +106,37 @@ export async function fetchMe(api: APIRequestContext): Promise<MeResponse> {
   return await response.json() as MeResponse;
 }
 
+export async function waitForEventually<T>(
+  producer: () => Promise<T>,
+  predicate: (value: T) => boolean,
+  timeoutMs = defaultEventuallyTimeoutMs,
+  intervalMs = defaultEventuallyIntervalMs,
+): Promise<T> {
+  const startedAt = Date.now();
+  let lastValue: T | undefined;
+
+  while (Date.now() - startedAt < timeoutMs) {
+    lastValue = await producer();
+    if (predicate(lastValue)) {
+      return lastValue;
+    }
+
+    await new Promise((resolve) => setTimeout(resolve, intervalMs));
+  }
+
+  throw new Error(`Condition was not met within ${timeoutMs}ms. Last value: ${JSON.stringify(lastValue)}`);
+}
+
 export async function setTaste(api: APIRequestContext, taste: MeResponse['taste']): Promise<void> {
   const response = await api.patch('/api/v1/users/me', {
     data: { taste },
+  });
+  expect(response.ok()).toBeTruthy();
+}
+
+export async function setTheme(api: APIRequestContext, theme: MeResponse['theme']): Promise<void> {
+  const response = await api.patch('/api/v1/users/me', {
+    data: { theme },
   });
   expect(response.ok()).toBeTruthy();
 }
