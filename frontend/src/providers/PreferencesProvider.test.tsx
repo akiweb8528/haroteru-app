@@ -61,7 +61,7 @@ function PreferenceProbe() {
 }
 
 describe('PreferencesProvider', () => {
-  const session = {
+  const authenticatedSession = {
     user: {
       id: 'user-1',
       email: 'user@example.com',
@@ -74,12 +74,14 @@ describe('PreferencesProvider', () => {
 
   let serverPreferences: Pick<MeResponse, 'theme' | 'useGoogleAvatar' | 'taste'>;
   let resolvePreferenceUpdate: (() => void) | null;
+  let sessionState: { data: typeof authenticatedSession | null; status: 'authenticated' | 'loading' | 'unauthenticated' };
 
   beforeEach(() => {
     useSessionMock.mockReset();
     meMock.mockReset();
     updatePreferencesMock.mockReset();
-    useSessionMock.mockReturnValue({ data: session, status: 'authenticated' });
+    sessionState = { data: authenticatedSession, status: 'authenticated' };
+    useSessionMock.mockImplementation(() => sessionState);
     serverPreferences = {
       theme: 'light',
       useGoogleAvatar: true,
@@ -160,6 +162,61 @@ describe('PreferencesProvider', () => {
       expect(meMock).toHaveBeenCalledTimes(1);
       expect(screen.getByTestId('theme')).toHaveTextContent('dark');
       expect(localStorage.getItem('theme')).toBe('dark');
+    });
+  });
+
+  it('syncs pending local preferences when the session becomes available after reconnecting', async () => {
+    sessionState = { data: null, status: 'loading' };
+    setNavigatorOnlineState(false);
+
+    const { rerender } = render(
+      <PreferencesProvider>
+        <PreferenceProbe />
+      </PreferencesProvider>,
+    );
+
+    expect(meMock).not.toHaveBeenCalled();
+
+    await act(async () => {
+      screen.getByRole('button', { name: 'toggle-theme' }).click();
+    });
+
+    expect(screen.getByTestId('theme')).toHaveTextContent('dark');
+    expect(localStorage.getItem('theme')).toBe('dark');
+
+    await act(async () => {
+      setNavigatorOnlineState(true);
+      window.dispatchEvent(new Event('online'));
+    });
+
+    sessionState = { data: authenticatedSession, status: 'authenticated' };
+    await act(async () => {
+      rerender(
+        <PreferencesProvider>
+          <PreferenceProbe />
+        </PreferencesProvider>,
+      );
+    });
+
+    await waitFor(() => {
+      expect(updatePreferencesMock).toHaveBeenCalledWith({
+        theme: 'dark',
+        useGoogleAvatar: true,
+        taste: 'ossan',
+      });
+    });
+
+    expect(meMock).not.toHaveBeenCalled();
+    expect(screen.getByTestId('theme')).toHaveTextContent('dark');
+
+    await act(async () => {
+      resolvePreferenceUpdate?.();
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('theme')).toHaveTextContent('dark');
+      expect(localStorage.getItem('theme')).toBe('dark');
+      expect(localStorage.getItem('pending_preferences_sync')).toBeNull();
     });
   });
 });
