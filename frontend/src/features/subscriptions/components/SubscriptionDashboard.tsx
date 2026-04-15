@@ -1,9 +1,9 @@
 'use client';
 
-import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { useSession } from 'next-auth/react';
 import { cn, formatCurrency } from '@/lib/utils';
+import { OfflineAwareLink } from '@/components/navigation/OfflineAwareLink';
 import type { SubscriptionListParams } from '@/features/subscriptions/api/subscription-client';
 import { SubscriptionFilters } from '@/features/subscriptions/components/SubscriptionFilters';
 import { SubscriptionForm } from '@/features/subscriptions/components/SubscriptionForm';
@@ -43,7 +43,18 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
 
   const serverHook = useSubscriptions(isGuest ? null : filters);
   const localHook = useLocalSubscriptions(filters);
-  const { subscriptions, meta, isLoading, error, create, update, remove, reorder } = isGuest ? localHook : serverHook;
+  const { subscriptions, meta, isLoading, error, create, update, remove, reorder, syncState, syncNow } = isGuest ? localHook : serverHook;
+  const [recoveredFromOffline, setRecoveredFromOffline] = useState(false);
+  const prevIsOnlineRef = useRef(syncState.isOnline);
+  useEffect(() => {
+    if (!prevIsOnlineRef.current && syncState.isOnline && syncState.pendingCount > 0) {
+      setRecoveredFromOffline(true);
+    }
+    if (syncState.pendingCount === 0) {
+      setRecoveredFromOffline(false);
+    }
+    prevIsOnlineRef.current = syncState.isOnline;
+  }, [syncState.isOnline, syncState.pendingCount]);
   const summary = meta?.summary;
   const hasSubscriptions = subscriptions.length > 0;
   const isMigrationLoading = !isGuest && status === 'authenticated' && hasPendingLocalMigration && !hasSubscriptions && !error;
@@ -71,6 +82,15 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
   const migrationRetryText = taste === 'simple'
     ? 'まだ同期しきれていないサブスクがこの端末に残っています。もう一回同期を試してください。'
     : 'まだ同期しきれてへんサブスクがこの端末に残っとるで。すまんけど、もう一回同期を試してや。';
+  const authenticatedOfflineCopy = taste === 'simple'
+    ? `オフライン中です。この端末に ${syncState.pendingCount} 件の変更を保留しています。通信が戻ると自動で同期します。`
+    : `いまはオフラインやで。この端末に ${syncState.pendingCount} 件ぶんの変更を預かっとる。通信が戻ったら自動で同期するわ。`;
+  const authenticatedSyncingCopy = taste === 'simple'
+    ? '保留していた変更を同期しています。'
+    : '保留しとった変更を同期しとるで。';
+  const authenticatedSyncErrorCopy = syncState.syncError ?? (taste === 'simple'
+    ? '同期に失敗しました。通信が戻ってから再試行してください。'
+    : '同期に失敗してもうた。通信が戻ってから再試行してや。');
   const detailToggleLabel = showApprox
     ? (taste === 'simple' ? '正確にする' : '細かくするで')
     : (taste === 'simple' ? '概算にする' : '雑にするで');
@@ -139,9 +159,30 @@ export function SubscriptionDashboard({ isGuest = false }: Props) {
       {isGuest && (
         <div className="mb-6 rounded-2xl border border-blue-200 bg-blue-50 px-4 py-4 text-sm text-blue-900 dark:border-blue-900/40 dark:bg-blue-900/10 dark:text-blue-200">
           <p>{guestSyncCopy}</p>
-          <Link href="/auth/signin?callbackUrl=%2Fsubscriptions" className="mt-2 inline-block font-semibold underline underline-offset-2">
+          <OfflineAwareLink href="/auth/signin?callbackUrl=%2Fsubscriptions" className="mt-2 inline-block font-semibold underline underline-offset-2">
             Googleで同期を有効にする
-          </Link>
+          </OfflineAwareLink>
+        </div>
+      )}
+
+      {!isGuest && syncState.pendingCount > 0 && status === 'authenticated' && (!syncState.isOnline || recoveredFromOffline) && (
+        <div className="mb-6 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-4 text-sm text-amber-900 dark:border-amber-900/40 dark:bg-amber-900/10 dark:text-amber-200">
+          <p>{syncState.isOnline ? authenticatedSyncingCopy : authenticatedOfflineCopy}</p>
+        </div>
+      )}
+
+      {!isGuest && syncState.syncError && (
+        <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-800 dark:border-red-900/40 dark:bg-red-900/10 dark:text-red-200">
+          <p>{authenticatedSyncErrorCopy}</p>
+          <button
+            type="button"
+            onClick={() => {
+              void syncNow();
+            }}
+            className="mt-2 font-semibold underline underline-offset-2"
+          >
+            同期を再試行する
+          </button>
         </div>
       )}
 

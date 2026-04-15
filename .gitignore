@@ -8,10 +8,14 @@
 /build
 /frontend/.next/
 /frontend/tsconfig.tsbuildinfo
+/frontend/public/sw.js
+/frontend/public/sw.js.map
+/frontend/public/workbox-*.js
 
 # env
 .env
 .env.local
+.env.*.local
 
 # log
 npm-debug.log*
@@ -23,6 +27,16 @@ tmp
 
 # etc
 docker-compose.override.yml
+
+# editor / os
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# local build tools
+.vercel/
+.turbo/
 
 # serena
 /.serena/cache/

@@ -37,6 +37,30 @@ https://haroteru.com
   - ゲスト利用時はブラウザの localStorage
   - ログイン利用時は Backend + PostgreSQL
 
+### フロントエンドの構築方針
+
+- このプロジェクトは `SSR 中心` ではなく、`静的 shell + client hydration + PWA` を基本方針にしています
+- `/`, `/subscriptions`, `/settings`, `/auth/signin`, `/terms`, `/privacy` は build 時に静的生成し、表示速度と offline 対応を優先します
+- ログイン状態、サブスク一覧、設定など利用者ごとのデータは hydration 後に client 側で取得します
+- PWA では静的ページ shell と訪問済みルートの HTML / RSC をキャッシュし、offline 時も画面を開きやすくしています
+
+### ログインあり PWA の設計
+
+- 認証済みユーザーでも、PWA 利用時は直近のサブスク一覧を端末にキャッシュして開けるようにしています
+- オフライン中の追加、編集、削除、並び替えは端末内の pending operation queue に積み、通信復帰後に順番に Backend へ反映します
+- サーバーが正本であることは維持しつつ、PWA では「まず一覧を開けること」と「変更を失いにくいこと」を優先しています
+- iOS では `beforeinstallprompt` が使えないため、Safari の共有メニューからホーム画面追加する案内を別導線で出します
+
+### ローカルでの PWA / オフライン挙動確認
+
+`npm run dev` で起動すると画面右下に `PWA [ONLINE] SW:○` パネルが表示されます。
+
+- **[ONLINE] ボタン** を押すとオフライン模擬が始まり、オフラインバナー表示・API エラー・pending queue への振る舞いをそのまま確認できます
+- **SW:●** になると dev SW がアクティブになり、フェッチのインターセプトとキャッシュからのページ提供もテスト可能になります
+- ハードリロード中のオフライン模擬は `/_next/static` のチャンクをキャッシュしない設計のため HMR との兼ね合いで部分的に崩れます（クライアントサイドルーティングでの遷移テストは問題ありません）
+
+本番ビルドでの完全な動作確認は引き続き `cd frontend && npm run preview:pwa` を使ってください。
+
 ### フロントエンド構成
 
 - `frontend/src/app`: ルーティング、レイアウト、メタデータ

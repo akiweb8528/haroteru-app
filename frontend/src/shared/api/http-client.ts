@@ -30,7 +30,18 @@ export async function apiRequest<T>(path: string, options: RequestInit = {}): Pr
     headers.Authorization = `Bearer ${session.backendAccessToken}`;
   }
 
-  const res = await fetch(`${API_URL}/api/v1${path}`, { ...options, headers });
+  let res: Response;
+
+  try {
+    res = await fetch(`${API_URL}/api/v1${path}`, { ...options, headers });
+  } catch {
+    const offline = typeof navigator !== 'undefined' && !navigator.onLine;
+    throw new ApiError(
+      offline ? 'オフライン中です。通信が戻ってからもう一度お試しください。' : '通信に失敗しました。時間を空けてもう一度お試しください。',
+      0,
+      offline ? 'offline' : 'network_error',
+    );
+  }
 
   if (res.status === 401) {
     try {

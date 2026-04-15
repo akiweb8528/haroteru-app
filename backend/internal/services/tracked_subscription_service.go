@@ -66,7 +66,7 @@ type ReorderInput struct {
 	Items []struct {
 		ID       string `json:"id" validate:"required"`
 		Position int    `json:"position" validate:"min=0"`
-	} `json:"items" validate:"required,min=1"`
+	} `json:"items" validate:"required,min=1,max=200"`
 }
 
 func (s *TrackedSubscriptionService) List(userID string, f repositories.SubscriptionFilter) (*SubscriptionListResponse, error) {

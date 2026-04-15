@@ -12,6 +12,7 @@ import {
   subscriptionCard,
   subscriptionCardHeadings,
   submitSubscriptionForm,
+  waitForEventually,
 } from './e2e-helpers';
 
 test.describe('authenticated subscription dashboard', () => {
@@ -67,7 +68,10 @@ test.describe('authenticated subscription dashboard', () => {
     const card = subscriptionCard(page, subscriptionName);
     await expect(card).toBeVisible();
 
-    const subscriptionsAfterCreate = await fetchSubscriptions(apiContext);
+    const subscriptionsAfterCreate = await waitForEventually(
+      () => fetchSubscriptions(apiContext),
+      (subscriptions) => subscriptions.length === 1,
+    );
     expect(subscriptionsAfterCreate).toHaveLength(1);
 
     const created = subscriptionsAfterCreate[0];
@@ -95,7 +99,10 @@ test.describe('authenticated subscription dashboard', () => {
     await page.getByRole('button', { name: '削除する' }).click();
     await expect(subscriptionCard(page, subscriptionName)).toHaveCount(0);
 
-    const subscriptionsAfterDelete = await fetchSubscriptions(apiContext);
+    const subscriptionsAfterDelete = await waitForEventually(
+      () => fetchSubscriptions(apiContext),
+      (subscriptions) => subscriptions.length === 0,
+    );
     expect(subscriptionsAfterDelete).toHaveLength(0);
 
     const deletedById = await apiContext.get(`/api/v1/subscriptions/${created.id}`);
@@ -146,13 +153,124 @@ test.describe('authenticated subscription dashboard', () => {
     await expect(subscriptionCard(page, spotify.name)).toBeVisible();
     await expect(page.getByText('家族で共有しているやつ')).toBeVisible();
 
-    const updated = await apiContext.get(`/api/v1/subscriptions/${spotify.id}`);
-    expect(updated.ok()).toBeTruthy();
-    const updatedBody = await updated.json() as {
-      id: string;
-      note: string;
-    };
+    const updatedBody = await waitForEventually(
+      async () => {
+        const updated = await apiContext.get(`/api/v1/subscriptions/${spotify.id}`);
+        expect(updated.ok()).toBeTruthy();
+        return await updated.json() as {
+          id: string;
+          note: string;
+        };
+      },
+      (subscription) => subscription.note === '家族で共有しているやつ',
+    );
     expect(updatedBody.note).toBe('家族で共有しているやつ');
+  });
+
+  test('search input filters the subscription list by service name', async ({ page }) => {
+    const apiContext = getApi();
+    await createSubscription(apiContext, {
+      name: 'Netflix',
+      amountYen: 1490,
+      billingCycle: 'monthly',
+      category: 'video',
+    });
+    await createSubscription(apiContext, {
+      name: 'Spotify',
+      amountYen: 980,
+      billingCycle: 'monthly',
+      category: 'music',
+    });
+    await createSubscription(apiContext, {
+      name: 'Amazon Prime',
+      amountYen: 600,
+      billingCycle: 'monthly',
+      category: 'shopping',
+    });
+
+    await signInWithDevAuth(page);
+
+    await expect(subscriptionCard(page, 'Netflix')).toBeVisible();
+    await expect(subscriptionCard(page, 'Spotify')).toBeVisible();
+    await expect(subscriptionCard(page, 'Amazon Prime')).toBeVisible();
+
+    await page.getByPlaceholder('サービス名やメモで検索').fill('Netflix');
+
+    await expect(subscriptionCard(page, 'Netflix')).toBeVisible();
+    await expect(subscriptionCard(page, 'Spotify')).toHaveCount(0);
+    await expect(subscriptionCard(page, 'Amazon Prime')).toHaveCount(0);
+
+    // 検索をクリアすると全件表示に戻ること
+    await page.getByPlaceholder('サービス名やメモで検索').clear();
+
+    await expect(subscriptionCard(page, 'Netflix')).toBeVisible();
+    await expect(subscriptionCard(page, 'Spotify')).toBeVisible();
+    await expect(subscriptionCard(page, 'Amazon Prime')).toBeVisible();
+  });
+
+  test('billing cycle filter shows only the selected cycle', async ({ page }) => {
+    const apiContext = getApi();
+    await createSubscription(apiContext, {
+      name: 'Netflix',
+      amountYen: 1490,
+      billingCycle: 'monthly',
+      category: 'video',
+    });
+    await createSubscription(apiContext, {
+      name: 'Adobe CC',
+      amountYen: 72336,
+      billingCycle: 'yearly',
+      category: 'productivity',
+    });
+
+    await signInWithDevAuth(page);
+
+    await expect(subscriptionCard(page, 'Netflix')).toBeVisible();
+    await expect(subscriptionCard(page, 'Adobe CC')).toBeVisible();
+
+    // 月額のみに絞り込む
+    await page.locator('select').filter({ hasText: '支払い頻度すべて' }).selectOption('monthly');
+
+    await expect(subscriptionCard(page, 'Netflix')).toBeVisible();
+    await expect(subscriptionCard(page, 'Adobe CC')).toHaveCount(0);
+
+    // 年額のみに切り替え
+    await page.locator('select').filter({ hasText: '支払い頻度すべて' }).selectOption('yearly');
+
+    await expect(subscriptionCard(page, 'Adobe CC')).toBeVisible();
+    await expect(subscriptionCard(page, 'Netflix')).toHaveCount(0);
+  });
+
+  test('sort by amount orders cards from most to least expensive', async ({ page }) => {
+    const apiContext = getApi();
+    await createSubscription(apiContext, {
+      name: 'Budget App',
+      amountYen: 300,
+      billingCycle: 'monthly',
+      category: 'utilities',
+    });
+    await createSubscription(apiContext, {
+      name: 'Premium Suite',
+      amountYen: 2980,
+      billingCycle: 'monthly',
+      category: 'productivity',
+    });
+    await createSubscription(apiContext, {
+      name: 'Standard Plan',
+      amountYen: 980,
+      billingCycle: 'monthly',
+      category: 'lifestyle',
+    });
+
+    await signInWithDevAuth(page);
+
+    // デフォルトは登録順
+    await expect(subscriptionCardHeadings(page)).toHaveText(['Budget App', 'Premium Suite', 'Standard Plan']);
+
+    // 金額順（降順）に切り替え
+    await page.locator('select').filter({ hasText: '登録順' }).selectOption('amount_yen');
+
+    await expect(subscriptionCardHeadings(page)).toHaveText(['Premium Suite', 'Standard Plan', 'Budget App']);
   });
 
   test('reorders cards by drag-and-drop and keeps the new order after reload', async ({ page }) => {
@@ -187,7 +305,10 @@ test.describe('authenticated subscription dashboard', () => {
 
     await expect(subscriptionCardHeadings(page)).toHaveText(['Gamma', 'Alpha', 'Beta']);
 
-    const reordered = await fetchSubscriptions(apiContext);
+    const reordered = await waitForEventually(
+      () => fetchSubscriptions(apiContext),
+      (subscriptions) => subscriptions.map((item) => item.name).join(',') === 'Gamma,Alpha,Beta',
+    );
     expect(reordered.map((item) => item.name)).toEqual(['Gamma', 'Alpha', 'Beta']);
 
     await page.reload();

@@ -69,7 +69,7 @@ func main() {
 	authMW := middleware.NewAuthMiddleware(jwtSvc)
 
 	e := echo.New()
-	router.Setup(e, authMW, healthHandler, authHandler, userHandler, trackedSubscriptionHandler, cfg.FrontendURL, cfg.IsProduction())
+	router.Setup(e, authMW, healthHandler, authHandler, userHandler, trackedSubscriptionHandler, cfg.FrontendURL, cfg.IsProduction(), cfg.DevAuthEnabled)
 
 	srv := &http.Server{
 		Addr:         fmt.Sprintf(":%s", cfg.Port),

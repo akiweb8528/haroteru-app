@@ -1,8 +1,9 @@
 import type { Metadata } from 'next';
-import { SubscriptionDashboard } from '@/features/subscriptions/components/SubscriptionDashboard';
+import { SubscriptionsPageContent } from '@/features/subscriptions/components/SubscriptionsPageContent';
 
 export const metadata: Metadata = { title: 'ダッシュボード' };
+export const dynamic = 'force-static';
 
 export default function SubscriptionsPage() {
-  return <SubscriptionDashboard />;
+  return <SubscriptionsPageContent />;
 }
