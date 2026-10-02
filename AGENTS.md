@@ -101,3 +101,11 @@ fix(api)!: レスポンス形式を変更
 
 - `skills/haroteru-product`: プロダクト前提、用語、UX の判断基準
 - `skills/haroteru-fullstack-delivery`: 実装配置、変更規律、認証とセキュリティ確認
+
+## UI quality gate
+
+For UI design, changes (including copy-only and small layout/CSS fixes), reviews, and UI work instructions, read [QUAL-002](https://github.com/akiweb8528/akiweb8528-knowledge/blob/main/knowledge/quality/interface-design.md) P2 / D7–D9 from current `main` through authorized GitHub access or a current checkout. This route does not require installed Global Skills.
+
+Judge operation understanding together with the product's composition, presentation, world and information hierarchy. Remove redundant explanations; first improve visual hierarchy, placement, state and feedback where guidance is missing. When that conflicts with a more important product experience, use fitting assistance, including text. Preserve necessary labels, conditions and consequences. If the source is unavailable, report it unread and retain these acceptance conditions.
+
+Check affected rendered states and real interactions, revise inadequate candidates and repeat the same path before adoption. For instruction authoring, use [PROMPT-001](https://github.com/akiweb8528/akiweb8528-knowledge/blob/main/knowledge/workflows/knowledge-to-instructions.md) to turn the product's priorities into completion criteria and verification; do not claim the UI was tested. Keep checks within the affected flow and exclude work with no UI impact.
