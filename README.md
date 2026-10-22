@@ -233,7 +233,7 @@ GitHub Actions の CI は `.github/workflows/ci.yml` で管理しています。
 - 対象ブランチ: `main`, `staging`
 - backend: `go test ./...`
 - frontend: Node.js 24.22.1 の実値確認、`npm ci`、`npm run lint`、`npm run type-check`、`npm test`、`npm run build`
-- e2e: `npm ci`, `npx playwright install --with-deps chromium`, `npm run test:e2e`
+- e2e（Ubuntu 24.04 / Playwright 1.55）: `npm ci`, `npx playwright install --with-deps chromium`, `npm run test:e2e`
 
 CD は frontend が Vercel の branch 連携、backend は staging のみ Render Blueprint を使う前提にしています。
 

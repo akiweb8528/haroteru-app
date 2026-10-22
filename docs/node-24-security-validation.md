@@ -37,6 +37,8 @@ npm run test:e2e
 
 既存 E2E 全 10 件が成功（2.0 分）。ゲストの追加・reload 後保持、NextAuth 検証用認証と Go / DB 接続、追加・削除・編集・設定同期、検索、支払周期、金額順、drag-and-drop 並び替えと reload 後保持を確認した。
 
+CI の E2E runner は、Playwright 1.55 が対応する `ubuntu-24.04` に固定した。`ubuntu-latest` の Ubuntu 26.04.1 ではブラウザ導入時に `Playwright does not support chromium on ubuntu26.04-x64` で失敗したため、Dev Container とローカル検証に揃えた。Node.js 24.22.1 と既存 Playwright の組み合わせは維持している。
+
 ## コンテナとブラウザ
 
 Docker の最終 runner を `http://localhost:3301` で起動。`/`、`/api/auth/providers`（ダミー Google 設定）、`/api/auth/session`、`/sw.js` は HTTP 200。`/_next/image?url=%2Ficon.png&w=64&q=75` に `Accept: image/webp` を付けたリクエストは HTTP 200 / `image/webp`（1516 bytes）となり、sharp の実変換も成功。
