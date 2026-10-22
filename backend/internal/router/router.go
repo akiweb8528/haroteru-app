@@ -62,7 +62,7 @@ func Setup(
 	// Only register the dev-auth endpoint when the feature is explicitly enabled.
 	// Leaving it wired in production leaks the endpoint's existence and creates
 	// a brute-force surface if the flag is accidentally set.
-	if devAuthEnabled {
+	if devAuthEnabled && !production {
 		authGroup.POST("/dev", auth.DevSignIn)
 	}
 

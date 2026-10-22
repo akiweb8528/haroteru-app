@@ -65,7 +65,7 @@ func (s *AuthService) GoogleSignIn(ctx context.Context, idToken string) (*AuthRe
 }
 
 func (s *AuthService) DevSignIn(code string) (*AuthResponse, error) {
-	if !s.cfg.DevAuthEnabled {
+	if s.cfg.IsProduction() || !s.cfg.DevAuthEnabled {
 		return nil, ErrDevAuthDisabled
 	}
 	if code == "" || code != s.cfg.DevAuthCode {

@@ -95,7 +95,7 @@ https://haroteru.com
 
 - PostgreSQL 接続情報
 - `DATABASE_URL` または `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB`
-- `JWT_SECRET`
+- `JWT_SECRET`: `openssl rand -hex 32` などで生成したランダムな秘密鍵
 - `GOOGLE_CLIENT_ID`
 - `GOOGLE_CLIENT_SECRET`
 - `NEXTAUTH_URL`
@@ -186,6 +186,8 @@ production backend の env は次を設定します。
 - `FRONTEND_URL`: Vercel production frontend の公開 URL
 - `DEV_AUTH_ENABLED=false`
 
+本番では開発用認証を有効にすると backend の起動を拒否します。`JWT_SECRET` も起動時に検査し、32 bytes 未満、サンプル値、空白を含む値、単純な反復・順序列を拒否します。この検査は乱数性の保証ではありません。デプロイ先の環境名・秘密鍵・OAuth 設定は、実際の設定と起動結果で確認してください。
+
 frontend は Vercel にデプロイします。Vercel 側で設定する主な env は次のとおりです。
 
 - `NEXTAUTH_URL`: frontend の公開 URL
@@ -213,10 +215,10 @@ Google OAuth の設定では、以下の callback / origin を追加してくだ
 Google OAuth の切り分け用に、開発・検証専用の簡易サインインも用意しています。
 
 - backend: `DEV_AUTH_ENABLED=true`, `DEV_AUTH_CODE=<secret>`
-- frontend: `DEV_AUTH_ENABLED=true`
+- frontend: `DEV_AUTH_ENABLED=true`。production ビルドを使う staging では、サーバー環境変数 `ENVIRONMENT=staging` も指定
 - 必要に応じて backend 側で `DEV_AUTH_EMAIL`, `DEV_AUTH_NAME` も指定可能
 
-この導線は staging / debug 用の補助機能で、production では `false` のまま運用してください。
+この導線は staging / debug 用です。backend の `ENVIRONMENT=production`、frontend の本番環境指定（`VERCEL_ENV` / `NEXT_PUBLIC_APP_ENV` を含む）があれば無効になります。環境名の誤記も backend の起動時に拒否します。
 
 ## CI / CD
 
