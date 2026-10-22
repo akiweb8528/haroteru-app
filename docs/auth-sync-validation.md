@@ -56,7 +56,7 @@ backend 起動時に migration `000005` が適用されます。backend を先�
 
 ## staging 反映後の確認（2026-10-23 JST）
 
-PR [#103](https://github.com/akiweb8528/haroteru-app/pull/103) は head `fa41c0d` の Backend Test / Frontend Check / Playwright E2E 成功、base `staging`、差分・未解決 review thread がないことを再確認し、merge commit `07cee577957bb1ab9e8b65e70b0fc51ca4089835` で反映しました。[staging push の CI](https://github.com/akiweb8528/haroteru-app/actions/runs/39811675454) も全 job 成功です。`main` の起点は `f6d3d3089a80fa45ef92fc28beb41abe36af642a` で、今回の昇格先にはしていません。
+PR [#103](https://github.com/akiweb8528/haroteru-app/pull/103) は head `fa41c0d` の Backend Test / Frontend Check / Playwright E2E 成功と base `staging`、対象差分を再確認しました。未解決 review thread はなく、merge commit `07cee577957bb1ab9e8b65e70b0fc51ca4089835` で反映しました。[staging push の CI](https://github.com/akiweb8528/haroteru-app/actions/runs/39811675454) も全 job 成功です。`main` の起点は `f6d3d3089a80fa45ef92fc28beb41abe36af642a` で、今回の昇格先にはしていません。
 
 ### 実配備と公開経路
 
