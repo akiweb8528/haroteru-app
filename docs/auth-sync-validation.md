@@ -30,6 +30,7 @@ Web Locks 対応ブラウザでは利用者別の送信ロックと、短時間�
 - Backend: `go test ./...` を実行。`TEST_DATABASE_URL` 指定時は隔離 schema へ実 migration を適用し、台帳 integration 5 件も実行。
 - Playwright: 既存 10 件、redirect 回帰 2 件、同期遅延・部分失敗・成功応答消失の回帰 4 件が通過。
 - CI の backend job に PostgreSQL 16 と `TEST_DATABASE_URL` を追加。既存 lint・型検査・unit・E2E の区分を維持。
+- GitHub CI で `ubuntu-latest` の Ubuntu 26.04 と Playwright 1.55 が非対応と分かったため、E2E の runner だけを対応する Ubuntu 24.04 に固定。backend / frontend の成功ログを確認し、修正後に CI を再実行。
 
 ## ブラウザで確認した範囲
 
