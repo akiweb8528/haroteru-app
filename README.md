@@ -241,8 +241,8 @@ Google OAuth の切り分け用に、開発・検証専用の簡易サインイ�
 GitHub Actions の CI は `.github/workflows/ci.yml` で管理しています。
 
 - 対象ブランチ: `main`, `staging`
-- backend: `go test ./...`
-- frontend: `npm ci`, `npm run type-check`, `npm test`
+- backend: PostgreSQL 16 を使った台帳 integration を含む `go test ./...`
+- frontend: `npm ci`, `npm run lint`, `npm run type-check`, `npm test`
 - e2e: `npm ci`, `npx playwright install --with-deps chromium`, `npm run test:e2e`
 
 CD は frontend が Vercel の branch 連携、backend は staging のみ Render Blueprint を使う前提にしています。
@@ -279,9 +279,9 @@ fix: description     # → patch (バグ修正)
 1. feature ブランチから `staging` へ PR
 2. CI 通過後に `staging` へマージ
 3. Render staging backend と Vercel staging frontend が自動デプロイ
-4. 動作確認後に `main` へ反映
-5. Vercel production frontend が自動デプロイ
-6. 必要に応じて Render production backend を手動デプロイ、または Render ダッシュボードで設定変更を反映
+4. staging の動作確認後、Render production backend を先に更新し、本番環境変数・起動時検証・migration の成功を確認
+5. `main` へ反映し、Vercel production frontend を自動デプロイ
+6. production のログイン・同期を確認
 
 ## フロントエディタエラー解消
 
