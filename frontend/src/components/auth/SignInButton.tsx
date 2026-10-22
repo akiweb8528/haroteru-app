@@ -1,6 +1,7 @@
 'use client';
 
 import { signIn } from 'next-auth/react';
+import { sanitizeCallbackUrl } from '@/lib/utils';
 import { OfflineAwareLink } from '@/components/navigation/OfflineAwareLink';
 import { INSTALL_PROMPT_AFTER_GOOGLE_AUTH_KEY } from '@/features/pwa/lib/constants';
 
@@ -19,6 +20,7 @@ const GoogleLogo = ({ className }: { className: string }) => (
 );
 
 export function SignInButton({ callbackUrl = '/subscriptions', compact = false }: Props) {
+  const safeCallbackUrl = sanitizeCallbackUrl(callbackUrl);
   const markInstallPromptIntent = () => {
     try {
       sessionStorage.setItem(INSTALL_PROMPT_AFTER_GOOGLE_AUTH_KEY, 'true');
@@ -28,7 +30,7 @@ export function SignInButton({ callbackUrl = '/subscriptions', compact = false }
   if (compact) {
     return (
       <OfflineAwareLink
-        href={`/auth/signin?callbackUrl=${encodeURIComponent(callbackUrl)}`}
+        href={`/auth/signin?callbackUrl=${encodeURIComponent(safeCallbackUrl)}`}
         onClick={markInstallPromptIntent}
         className="flex items-center gap-2 rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md active:scale-95"
       >
@@ -42,7 +44,7 @@ export function SignInButton({ callbackUrl = '/subscriptions', compact = false }
     <button
       onClick={() => {
         markInstallPromptIntent();
-        void signIn('google', { callbackUrl });
+        void signIn('google', { callbackUrl: safeCallbackUrl });
       }}
       className="flex w-full items-center justify-center gap-3 rounded-xl border border-gray-200 bg-white px-4 py-3 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 hover:shadow-md active:scale-95"
     >

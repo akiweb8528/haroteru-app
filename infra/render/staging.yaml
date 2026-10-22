@@ -10,7 +10,7 @@ services:
     healthCheckPath: /health/ready
     envVars:
       - key: ENVIRONMENT
-        value: production
+        value: staging
       - key: DATABASE_URL
         sync: false
       - key: JWT_SECRET

@@ -8,11 +8,13 @@ import {
   REFRESH_REQUEST_TIMEOUT_MS,
   shouldAttemptTokenRefresh,
 } from './auth-refresh';
+import { resolveAuthRedirectPath } from './auth-redirect';
+import { isDevAuthEnabled } from './dev-auth';
 import { DEV_AUTH_NETWORK_ERROR } from './auth-errors';
 import { resolveServiceBaseUrl } from './utils';
 
 const BACKEND_URL = resolveServiceBaseUrl(process.env.BACKEND_URL, 'http://localhost:8080');
-const DEV_AUTH_ENABLED = process.env.DEV_AUTH_ENABLED === 'true';
+const DEV_AUTH_ENABLED = isDevAuthEnabled();
 const AUTH_REQUEST_TIMEOUT_MS = 10_000;
 
 type BackendAuthUser = {
@@ -116,6 +118,9 @@ export const authOptions: NextAuthOptions = {
       : []),
   ],
   callbacks: {
+    async redirect({ url, baseUrl }) {
+      return `${new URL(baseUrl).origin}${resolveAuthRedirectPath(url, baseUrl)}`;
+    },
     async jwt({ token, account, user }) {
       if (account?.id_token) {
         try {

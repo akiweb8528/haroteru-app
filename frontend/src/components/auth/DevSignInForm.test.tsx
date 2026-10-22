@@ -14,6 +14,16 @@ describe('DevSignInForm', () => {
     vi.clearAllMocks();
   });
 
+  it('検証用認証にも安全な callbackUrl だけを渡す', async () => {
+    mockSignIn.mockResolvedValue({ error: 'CredentialsSignin', url: null });
+    render(<DevSignInForm callbackUrl="/.//evil.com" />);
+    fireEvent.change(screen.getByPlaceholderText('検証コード'), { target: { value: 'code' } });
+    fireEvent.click(screen.getByRole('button', { name: '検証用でサインイン' }));
+    await waitFor(() => expect(mockSignIn).toHaveBeenCalledWith('dev', {
+      callbackUrl: '/subscriptions', redirect: false, verificationCode: 'code',
+    }));
+  });
+
   it('signIn が reject しても送信状態のまま固まらない', async () => {
     mockSignIn.mockRejectedValue(new Error('network error'));
 

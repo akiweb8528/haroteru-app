@@ -95,7 +95,7 @@ https://haroteru.com
 
 - PostgreSQL 接続情報
 - `DATABASE_URL` または `POSTGRES_USER` / `POSTGRES_PASSWORD` / `POSTGRES_DB`
-- `JWT_SECRET`
+- `JWT_SECRET`: `openssl rand -hex 32` などで生成したランダムな秘密鍵
 - `GOOGLE_CLIENT_ID`
 - `GOOGLE_CLIENT_SECRET`
 - `NEXTAUTH_URL`
@@ -186,6 +186,8 @@ production backend の env は次を設定します。
 - `FRONTEND_URL`: Vercel production frontend の公開 URL
 - `DEV_AUTH_ENABLED=false`
 
+本番では開発用認証を有効にすると backend の起動を拒否します。`JWT_SECRET` も起動時に検査し、32 bytes 未満、サンプル値、空白を含む値、単純な反復・順序列を拒否します。この検査は乱数性の保証ではありません。デプロイ先の環境名・秘密鍵・OAuth 設定は、実際の設定と起動結果で確認してください。
+
 frontend は Vercel にデプロイします。Vercel 側で設定する主な env は次のとおりです。
 
 - `NEXTAUTH_URL`: frontend の公開 URL
@@ -213,19 +215,35 @@ Google OAuth の設定では、以下の callback / origin を追加してくだ
 Google OAuth の切り分け用に、開発・検証専用の簡易サインインも用意しています。
 
 - backend: `DEV_AUTH_ENABLED=true`, `DEV_AUTH_CODE=<secret>`
-- frontend: `DEV_AUTH_ENABLED=true`
+- frontend: `DEV_AUTH_ENABLED=true`。production ビルドを使う staging では、サーバー環境変数 `ENVIRONMENT=staging` も指定
 - 必要に応じて backend 側で `DEV_AUTH_EMAIL`, `DEV_AUTH_NAME` も指定可能
 
-この導線は staging / debug 用の補助機能で、production では `false` のまま運用してください。
+この導線は staging / debug 用です。backend の `ENVIRONMENT=production`、frontend の本番環境指定（`VERCEL_ENV` / `NEXT_PUBLIC_APP_ENV` を含む）があれば無効になります。環境名の誤記も backend の起動時に拒否します。
+
+## 認証済みの保存と同期
+
+ログイン中の変更も、まず利用者別のブラウザ保存領域へ記録します。既存の `authenticated_subscriptions_sync_v1` と未送信操作を読み込み、データ消去を伴う移行は行いません。操作ごとに ID を付け、送信中の内容を変更せず、成功確認できた ID だけをキューから除きます。作成後のサーバー ID と後続の編集・削除は一度に保存します。
+
+ゲストからの移行も、コピー先と元項目の対応を永続保存してこのキューへ渡します。コピー先の保存が成功した項目だけをゲスト保存から除き、途中の追加・編集・保存失敗では元データを保持します。
+
+一覧取得は未同期の変更や個別操作の失敗があっても続けます。取得開始時のローカル revision を確認し、未同期の追加・編集・削除・並び替えを重ねて表示します。通信失敗時も一覧を残し、端末への保存済み件数と再試行を表示します。保存領域が使えない場合は保存成功として扱いません。
+
+送信・一覧取得の待機は各 15 秒、自動送信は操作ごとに最大 5 回、待ち時間を空けて再試行します。上限後もデータを保持し、手動で再試行できます。同じ項目の後続操作は順番を守り、独立した項目は先行する個別失敗があっても同期します。サーバーが確実に拒否した操作は再編集・削除で修復し、結果不明の通信失敗は同じ操作 ID で再送します。
+
+サーバー側は利用者・操作 ID ごとの実行済み台帳と変更を同じトランザクションで保存し、再送には初回の結果を返します。同じ ID で別の内容を送る要求は拒否します。台帳は削除済み項目への遅延再送にも必要なため、自動保持期限を設けず、アカウント削除時に削除します。容量は成功操作数に比例します。台帳を手動削除すると再送保護が失われます。
+
+同期キューの送信はキー必須の `/api/v1/sync/subscriptions` を使い、旧 backend の 404 では変更を保持します。既存 `/subscriptions` への fallback は行いません。backend を先に更新してください。起動時に migration `000005_subscription_operation_receipts` が適用されます。その後 frontend を更新します。旧 backend へ新 frontend だけを接続した状態では再送保護を確認できません。
+
+検証範囲と移行時の限界は [認証・同期の検証記録](docs/auth-sync-validation.md) を参照してください。
 
 ## CI / CD
 
 GitHub Actions の CI は `.github/workflows/ci.yml` で管理しています。
 
 - 対象ブランチ: `main`, `staging`
-- backend: `go test ./...`
-- frontend: `npm ci`, `npm run type-check`, `npm test`
-- e2e: `npm ci`, `npx playwright install --with-deps chromium`, `npm run test:e2e`
+- backend: PostgreSQL 16 を使った台帳 integration を含む `go test ./...`
+- frontend: `npm ci`, `npm run lint`, `npm run type-check`, `npm test`
+- e2e（Ubuntu 24.04 / Playwright 1.55）: `npm ci`, `npx playwright install --with-deps chromium`, `npm run test:e2e`
 
 CD は frontend が Vercel の branch 連携、backend は staging のみ Render Blueprint を使う前提にしています。
 
@@ -261,9 +279,9 @@ fix: description     # → patch (バグ修正)
 1. feature ブランチから `staging` へ PR
 2. CI 通過後に `staging` へマージ
 3. Render staging backend と Vercel staging frontend が自動デプロイ
-4. 動作確認後に `main` へ反映
-5. Vercel production frontend が自動デプロイ
-6. 必要に応じて Render production backend を手動デプロイ、または Render ダッシュボードで設定変更を反映
+4. staging の動作確認後、Render production backend を先に更新し、本番環境変数・起動時検証・migration の成功を確認
+5. `main` へ反映し、Vercel production frontend を自動デプロイ
+6. production のログイン・同期を確認
 
 ## フロントエディタエラー解消
 

@@ -2,6 +2,8 @@
 
 import { useState } from 'react';
 import { signIn } from 'next-auth/react';
+import { resolveAuthRedirectPath } from '@/lib/auth-redirect';
+import { sanitizeCallbackUrl } from '@/lib/utils';
 import { DEV_AUTH_NETWORK_ERROR, resolveDevAuthErrorMessage } from '@/lib/auth-errors';
 
 interface Props {
@@ -25,7 +27,7 @@ export function DevSignInForm({ callbackUrl = '/subscriptions' }: Props) {
 
     try {
       const result = await signIn('dev', {
-        callbackUrl,
+        callbackUrl: sanitizeCallbackUrl(callbackUrl),
         redirect: false,
         verificationCode: verificationCode.trim(),
       });
@@ -36,7 +38,7 @@ export function DevSignInForm({ callbackUrl = '/subscriptions' }: Props) {
         return;
       }
 
-      window.location.href = result.url;
+      window.location.href = resolveAuthRedirectPath(result.url, window.location.origin);
     } catch {
       setError(resolveDevAuthErrorMessage(DEV_AUTH_NETWORK_ERROR));
       setIsSubmitting(false);
