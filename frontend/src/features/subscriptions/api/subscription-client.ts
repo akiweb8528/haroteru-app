@@ -23,7 +23,7 @@ export type ReorderSubscriptionsInput = {
 };
 
 export const subscriptionApi = {
-  list(params: SubscriptionListParams = {}): Promise<SubscriptionListResponse> {
+  list(params: SubscriptionListParams = {}, expectedUserId?: string, signal?: AbortSignal): Promise<SubscriptionListResponse> {
     const qs = new URLSearchParams();
     if (params.search) qs.set('search', params.search);
     if (params.category) qs.set('category', params.category);
@@ -35,27 +35,41 @@ export const subscriptionApi = {
     if (params.page) qs.set('page', String(params.page));
     if (params.limit) qs.set('limit', String(params.limit));
     const suffix = qs.toString() ? `?${qs}` : '';
-    return apiRequest<SubscriptionListResponse>(`/subscriptions${suffix}`);
+    return apiRequest<SubscriptionListResponse>(`/subscriptions${suffix}`, { expectedUserId, signal });
   },
-  create(input: CreateTrackedSubscriptionInput): Promise<TrackedSubscription> {
-    return apiRequest<TrackedSubscription>('/subscriptions', {
+  create(input: CreateTrackedSubscriptionInput, operationId?: string, expectedUserId?: string, signal?: AbortSignal): Promise<TrackedSubscription> {
+    return apiRequest<TrackedSubscription>(operationId ? '/sync/subscriptions' : '/subscriptions', {
       method: 'POST',
       body: JSON.stringify(input),
+      headers: operationId ? { 'Idempotency-Key': operationId } : undefined,
+      expectedUserId,
+      signal,
     });
   },
-  update(id: string, input: UpdateTrackedSubscriptionInput): Promise<TrackedSubscription> {
-    return apiRequest<TrackedSubscription>(`/subscriptions/${id}`, {
+  update(id: string, input: UpdateTrackedSubscriptionInput, operationId?: string, expectedUserId?: string, signal?: AbortSignal): Promise<TrackedSubscription> {
+    return apiRequest<TrackedSubscription>(`${operationId ? '/sync' : ''}/subscriptions/${id}`, {
       method: 'PATCH',
       body: JSON.stringify(input),
+      headers: operationId ? { 'Idempotency-Key': operationId } : undefined,
+      expectedUserId,
+      signal,
     });
   },
-  delete(id: string): Promise<void> {
-    return apiRequest<void>(`/subscriptions/${id}`, { method: 'DELETE' });
+  delete(id: string, operationId?: string, expectedUserId?: string, signal?: AbortSignal): Promise<void> {
+    return apiRequest<void>(`${operationId ? '/sync' : ''}/subscriptions/${id}`, {
+      method: 'DELETE',
+      headers: operationId ? { 'Idempotency-Key': operationId } : undefined,
+      expectedUserId,
+      signal,
+    });
   },
-  reorder(input: ReorderSubscriptionsInput): Promise<void> {
-    return apiRequest<void>('/subscriptions/reorder', {
+  reorder(input: ReorderSubscriptionsInput, operationId?: string, expectedUserId?: string, signal?: AbortSignal): Promise<void> {
+    return apiRequest<void>(operationId ? '/sync/subscriptions/reorder' : '/subscriptions/reorder', {
       method: 'PATCH',
       body: JSON.stringify(input),
+      headers: operationId ? { 'Idempotency-Key': operationId } : undefined,
+      expectedUserId,
+      signal,
     });
   },
 };

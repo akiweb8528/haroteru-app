@@ -2,6 +2,7 @@ package router
 
 import (
 	"net/http"
+	"strings"
 
 	"haroteru/backend/internal/handlers"
 	"haroteru/backend/internal/middleware"
@@ -80,10 +81,30 @@ func Setup(
 	protected.DELETE("/subscriptions/:id", subscriptions.Delete)
 	protected.PATCH("/subscriptions/reorder", subscriptions.Reorder)
 
+	// Older backends have no sync routes, so mixed deployments cannot silently
+	// execute a queued operation without recording its replay receipt.
+	sync := protected.Group("/sync", requireOperationID)
+	sync.POST("/subscriptions", subscriptions.Create)
+	sync.PATCH("/subscriptions/reorder", subscriptions.Reorder)
+	sync.PATCH("/subscriptions/:id", subscriptions.Update)
+	sync.DELETE("/subscriptions/:id", subscriptions.Delete)
+
 	e.RouteNotFound("/*", func(c echo.Context) error {
 		return c.JSON(http.StatusNotFound, map[string]string{
 			"error":   "not_found",
 			"message": "The requested endpoint does not exist",
 		})
 	})
+}
+
+func requireOperationID(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		if strings.TrimSpace(c.Request().Header.Get("Idempotency-Key")) == "" {
+			return echo.NewHTTPError(http.StatusBadRequest, map[string]string{
+				"error":   "missing_operation_id",
+				"message": "Idempotency-Key is required for queued subscription mutations",
+			})
+		}
+		return next(c)
+	}
 }

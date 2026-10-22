@@ -24,7 +24,7 @@ func CORS(frontendURL string) echo.MiddlewareFunc {
 	return echomw.CORSWithConfig(echomw.CORSConfig{
 		AllowOrigins:     origins,
 		AllowMethods:     []string{"GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"},
-		AllowHeaders:     []string{"Authorization", "Content-Type", "X-Request-ID"},
+		AllowHeaders:     []string{"Authorization", "Content-Type", "X-Request-ID", "Idempotency-Key"},
 		AllowCredentials: true,
 		MaxAge:           86400,
 	})

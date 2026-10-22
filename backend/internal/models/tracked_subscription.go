@@ -27,19 +27,20 @@ const (
 )
 
 type TrackedSubscription struct {
-	ID            string               `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
-	UserID        string               `gorm:"type:uuid;not null;index"                     json:"userId"`
-	Name          string               `gorm:"not null"                                     json:"name"`
-	AmountYen     int                  `gorm:"column:amount_yen;not null"                   json:"amountYen"`
-	BillingCycle  BillingCycle         `gorm:"column:billing_cycle;type:billing_cycle;not null;default:'monthly'" json:"billingCycle"`
-	Category      *SubscriptionCategory `gorm:"type:subscription_category"                                json:"category,omitempty"`
-	ReviewPriority ReviewPriority      `gorm:"column:review_priority;type:review_priority;not null;default:'medium'" json:"reviewPriority"`
-	Locked        bool                 `gorm:"not null;default:false"                       json:"locked"`
-	BillingDay    *int                 `gorm:"column:billing_day"                           json:"billingDay,omitempty"`
-	Note          string               `gorm:"not null;default:''"                          json:"note"`
-	Position      int                  `gorm:"not null;default:0"                           json:"position"`
-	CreatedAt     time.Time            `json:"createdAt"`
-	UpdatedAt     time.Time            `json:"updatedAt"`
+	ID                string                `gorm:"type:uuid;primaryKey;default:gen_random_uuid()" json:"id"`
+	UserID            string                `gorm:"type:uuid;not null;index"                     json:"userId"`
+	CreateOperationID *string               `gorm:"column:create_operation_id;type:varchar(128)" json:"createOperationId,omitempty"`
+	Name              string                `gorm:"not null"                                     json:"name"`
+	AmountYen         int                   `gorm:"column:amount_yen;not null"                   json:"amountYen"`
+	BillingCycle      BillingCycle          `gorm:"column:billing_cycle;type:billing_cycle;not null;default:'monthly'" json:"billingCycle"`
+	Category          *SubscriptionCategory `gorm:"type:subscription_category"                                json:"category,omitempty"`
+	ReviewPriority    ReviewPriority        `gorm:"column:review_priority;type:review_priority;not null;default:'medium'" json:"reviewPriority"`
+	Locked            bool                  `gorm:"not null;default:false"                       json:"locked"`
+	BillingDay        *int                  `gorm:"column:billing_day"                           json:"billingDay,omitempty"`
+	Note              string                `gorm:"not null;default:''"                          json:"note"`
+	Position          int                   `gorm:"not null;default:0"                           json:"position"`
+	CreatedAt         time.Time             `json:"createdAt"`
+	UpdatedAt         time.Time             `json:"updatedAt"`
 }
 
 func (TrackedSubscription) TableName() string { return "tracked_subscriptions" }
