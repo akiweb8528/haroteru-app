@@ -115,7 +115,13 @@ https://haroteru.com
 docker compose up
 ```
 
-`.devcontainer/devcontainer.json` で Node.js 20 / Go 1.26 / Docker を揃えており、`postCreateCommand` で `frontend` の `npm install` と `backend` の `go mod download` を自動実行します。
+`.devcontainer/devcontainer.json` で Node.js 24.22.1 / Go 1.26 / Docker を揃えており、`postCreateCommand` で `frontend` の `npm ci`・Playwright Chromium の導入と `backend` の `go mod download` を自動実行します。
+
+ホストで開発する場合は、リポジトリ直下で `.nvmrc` に従って `fnm install && fnm use`（nvm 利用環境では `nvm install && nvm use`）を実行し、`node --version` が `v24.22.1` であることを確認してください。`frontend/package.json` は修正済みの Node.js 24 系（`>=24.22.1 <25`）だけを許可します。CI は 24.22.1、Docker の開発・builder・runner は公式 `node:24.22.1-alpine` に固定しています。
+
+2026年10月21日の [Node.js セキュリティ修正](https://nodejs.org/en/blog/vulnerability/october-2026-security-releases)に対応し、[24.22.1](https://nodejs.org/en/blog/release/v24.22.1/) を基準にしています。
+
+既存 Dev Container は設定の保存だけでは Node.js が更新されないため、`Dev Containers: Rebuild Container` を実行し、コンテナ内で `node --version` が `v24.22.1` であることを確認してください。
 
 主な起動先:
 
@@ -186,7 +192,9 @@ production backend の env は次を設定します。
 - `FRONTEND_URL`: Vercel production frontend の公開 URL
 - `DEV_AUTH_ENABLED=false`
 
-frontend は Vercel にデプロイします。Vercel 側で設定する主な env は次のとおりです。
+frontend は Vercel にデプロイします。Vercel の Project Settings → Build and Deployment で Root Directory が `frontend` であることを確認し、Node.js 24.x を選択して、Preview / Production のデプロイログで実際のバージョンが 24.22.1 以上の 24 系であることを確認してください。Vercel のパッチバージョンはプラットフォーム管理のため、リポジトリの更新だけで既存デプロイの Node.js は変わりません。staging の Preview で確認後、通常のリリース手順で production を再デプロイし、ログと HTTP 応答を確認します。Render の Go backend は今回の Node.js 更新対象外です。
+
+Vercel 側で設定する主な env は次のとおりです。
 
 - `NEXTAUTH_URL`: frontend の公開 URL
 - `NEXTAUTH_SECRET`
@@ -224,7 +232,7 @@ GitHub Actions の CI は `.github/workflows/ci.yml` で管理しています。
 
 - 対象ブランチ: `main`, `staging`
 - backend: `go test ./...`
-- frontend: `npm ci`, `npm run type-check`, `npm test`
+- frontend: Node.js 24.22.1 の実値確認、`npm ci`、`npm run lint`、`npm run type-check`、`npm test`、`npm run build`
 - e2e: `npm ci`, `npx playwright install --with-deps chromium`, `npm run test:e2e`
 
 CD は frontend が Vercel の branch 連携、backend は staging のみ Render Blueprint を使う前提にしています。
@@ -272,7 +280,7 @@ fix: description     # → patch (バグ修正)
 依存関係を入れ直したい場合だけ、Dev Container 内で次を実行してください。
 
 ```bash
-cd frontend && npm install
+cd frontend && npm ci
 ```
 
 ## ライセンス

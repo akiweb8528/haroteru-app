@@ -1,10 +1,10 @@
 # Build stage
-FROM node:20-alpine AS builder
+FROM node:24.22.1-alpine AS builder
 
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
-RUN npm ci
+RUN npm ci --no-audit --no-fund
 
 COPY . .
 
@@ -13,7 +13,7 @@ ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
 
 # Runtime stage
-FROM node:20-alpine AS runner
+FROM node:24.22.1-alpine AS runner
 
 WORKDIR /app
 

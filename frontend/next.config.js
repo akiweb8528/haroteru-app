@@ -19,6 +19,7 @@ const PRECACHE_MANIFEST_ENTRIES = [
 ];
 
 const nextConfig = {
+  output: 'standalone',
   async headers() {
     const csp = buildContentSecurityPolicy({
       apiUrl: process.env.NEXT_PUBLIC_API_URL,

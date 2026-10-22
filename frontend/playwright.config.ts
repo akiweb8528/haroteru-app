@@ -6,6 +6,7 @@ const frontendDir = __dirname;
 const repoRoot = resolve(frontendDir, '..');
 
 const frontendUrl = process.env.PLAYWRIGHT_FRONTEND_URL || 'http://127.0.0.1:3000';
+const frontendPort = new URL(frontendUrl).port || '3000';
 const backendUrl = process.env.PLAYWRIGHT_BACKEND_URL || 'http://127.0.0.1:8080';
 const postgresUser = process.env.POSTGRES_USER || 'haroteru_user';
 const postgresPassword = process.env.POSTGRES_PASSWORD || 'haroteru_password';
@@ -90,7 +91,7 @@ module.exports = defineConfig({
       },
     },
     {
-      command: 'npm run dev -- --hostname 127.0.0.1 --port 3000',
+      command: `npm run dev -- --hostname 127.0.0.1 --port ${frontendPort}`,
       cwd: frontendDir,
       url: frontendUrl,
       timeout: 180_000,
