@@ -22,11 +22,11 @@ Web Locks 対応ブラウザでは利用者別の送信ロックと、短時間�
 修正前に URL 正規化、create 中の編集・削除、update 中の更新、reorder の書き換え、一覧応答による未同期変更の上書きで失敗を確認し、修正後に同じ経路が通ることを確認しました。
 
 - storage: exact / 重複 / 先頭以外の完了確認、仮 ID 変換、後続編集・削除、一覧先行、古い drag snapshot、既存 v1、別ユーザー、破損・保存容量不足、確定拒否の訂正・削除。
-- guest migration: queue への引き渡し、コピー先保存と source marker の同時保存、ack 後の再 import、コピー中の追加・編集、保存失敗・破損、ユーザー切替・別ユーザーへの再 import 拒否。
+- guest migration: queue への引き渡し、コピー先保存と source marker の同時保存、ack 後の再 import、コピー中の追加・編集、保存失敗・破損、ユーザー切替・別ユーザーへの再 import 拒否、移行待機中のログアウトと同アカウントへの再ログイン後の再開。
 - runner / hook: 応答待ち中の編集・削除、個別失敗後の別項目、同 ID 再送、timeout、回数上限、再読み込み・オンライン復帰、認証変更、一覧取得中の新操作、一覧表示の継続。
 - API / DB: mutation と台帳の atomic commit、rollback、別ユーザーの分離、同キー別内容の拒否、削除後の再送、後続更新後の古い再送、検証条件変更後の replay。
 
-- Frontend: `npm run lint`、`npm run type-check`、`npm test`、`npm run build` を実行。全 217 件が通過。
+- Frontend: `npm run lint`、`npm run type-check`、`npm test`、`npm run build` を実行。全 218 件が通過。
 - Backend: `go test ./...` を実行。`TEST_DATABASE_URL` 指定時は隔離 schema へ実 migration を適用し、台帳 integration 5 件も実行。
 - Playwright: 既存 10 件、redirect 回帰 2 件、同期遅延・部分失敗・成功応答消失の回帰 4 件が通過。
 - CI の backend job に PostgreSQL 16 と `TEST_DATABASE_URL` を追加。既存 lint・型検査・unit・E2E の区分を維持。
