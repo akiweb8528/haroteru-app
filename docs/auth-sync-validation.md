@@ -53,3 +53,30 @@ backend 起動時に migration `000005` が適用されます。backend を先�
 旧実装がすでに送信して成功応答を失っていた create には、サーバーの実行済み台帳がありません。その履歴を新実装から遡って一意に照合することはできません。既存の未送信操作は保持しますが、この移行以前の不明な成功について重複防止を保証しません。旧版を開いたままの別タブも新しい保存ロックに参加しません。
 
 台帳に自動 TTL は設けていません。無期限のオフライン再送と、削除後の遅延再送を保護するためです。容量は成功操作数に比例し、利用者削除時に cascade で削除します。ロールバック時も台帳・利用者データを消去しません。localStorage が上限に達した場合は新しい保存を失敗として返し、既存保存は保持します。料金・本番 CPU・本番 DB 容量は計測していません。
+
+## staging 反映後の確認（2026-10-23 JST）
+
+PR [#103](https://github.com/akiweb8528/haroteru-app/pull/103) は head `fa41c0d` の Backend Test / Frontend Check / Playwright E2E 成功、base `staging`、差分・未解決 review thread がないことを再確認し、merge commit `07cee577957bb1ab9e8b65e70b0fc51ca4089835` で反映しました。[staging push の CI](https://github.com/akiweb8528/haroteru-app/actions/runs/39811675454) も全 job 成功です。`main` の起点は `f6d3d3089a80fa45ef92fc28beb41abe36af642a` で、今回の昇格先にはしていません。
+
+### 実配備と公開経路
+
+- [Vercel staging deployment](https://vercel.com/akiweb8528s-projects/haroteru-frontend-staging/DxFE8vJ2ntJ1NPUkFjBCLfpfmbEr) は `07cee57` で 01:11:16 JST に成功。
+- Render の最初の [deployment](https://dashboard.render.com/web/srv-d73rukbuibrs73aps1tg/deploys/dep-dbd3aqk9v7es73c73f80) は 01:12:14 JST に failure。その直後の同じ `07cee57` の [deployment](https://dashboard.render.com/web/srv-d73rukbuibrs73aps1tg/deploys/dep-dbd3ar7j6onc73c874og) は 01:13:33 JST に success。GitHub deployment status で確認しました。最初の failure の description は空で、Render 管理接続がないため詳細ログと原因は未取得です。
+- 実際の branch 連携では frontend が backend より先に完了しました。backend 先行を自動的に保証する gate はありません。この間のデータ保全を下記の実旧 backend 検証で確認しました。
+- 公開 [backend readiness](https://haroteru-backend-staging.onrender.com/health/ready) は 200。staging frontend origin からの preflight は 204 で、追加した `Idempotency-Key` が許可ヘッダーに含まれることを確認しました。旧 `e1c4841` の CORS にはこのヘッダーはありません。
+- 起動コードは `config.Load()` → DB 接続 → `RunMigrations()` → HTTP listen の順で、設定検証・migration の失敗時は起動しません。同 SHA の Render success、新 CORS と readiness の応答は、設定検証と migration `000005` を通った間接証拠です。staging DB の `schema_migrations`・台帳テーブルの直接 SELECT、Render 起動ログ、秘密鍵など実設定の値は取得していません。
+- [staging.haroteru.com](https://staging.haroteru.com/) と `/auth/signin` は 200。headless Chromium で Google ボタンを実際に押し、`accounts.google.com` への遷移、`redirect_uri=https://staging.haroteru.com/api/auth/callback/google`、`openid email profile`、page error なしを確認しました。`/api/auth/providers` は Google のみで検証用認証はありません。Vercel の deployment 固有 URL は Vercel Authentication の 302 です。
+
+staging の Google アカウント・ログイン済み session・検証用認証コードは利用できませんでした。このため実 staging の認証完了後の一覧・追加・編集・削除・同期・再試行は未実施です。以下の隔離環境の結果を実 staging の認証済み確認とは扱いません。
+
+### 旧 backend 混在と更新後の復旧
+
+通常の認証・CRUD・失敗後の UI 再試行・応答消失に加え、旧 backend の専用 URL への 404 を再現する E2E を追加しました。保存済みの一覧を表示したまま未同期項目を編集し、再読み込み後も create の操作 ID と編集が残ること、旧 `/subscriptions` へ fallback しないこと、専用 API 復旧後に同 ID で 1 件だけ作成されることを検証します。新しいテストの最初の実行では、自動復旧の完了後に消えた手動 retry ボタンを待つテスト側の競合がありました。自動復旧結果を待つよう修正し、全 17 件が成功しました。
+
+さらに別の隔離 PostgreSQL 16 DB と、実際の旧 `e1c4841` binary、新 `07cee57` binary、新 frontend を使い、390×844 の headless Chromium で次を実測しました。
+
+1. 旧 backend の migration version は `4` / dirty false。検証用サインイン後、新 frontend の入力から create と続く編集を保存。旧 CORS に `Idempotency-Key` がなく送信が拒否されても、画面と再読み込み後の browser storage に create / update が残り、create ID は同じ、サーバー行数は 0、旧変更 API への fallback は 0 件。
+2. 同じ DB・ポート・JWT 設定で新 backend に切り替え、起動時の migration `000005` を適用。新 frontend の自動再送後、migration version は `5` / dirty false、台帳 2 件、サーバー行 1 件、未同期 0 件。編集したメモが保たれ、再読み込み後のカードも 1 件。
+3. PostgreSQL を指定した `go test ./...`（integration 5 件を含む）、frontend lint・型検査・unit 218 件、Playwright 17 件を再実行。検証用の browser context / browser、Next frontend、Go binary と隔離 PostgreSQL は終了しました。通常のブラウザ保存・既存 DB・別作業のプロセスには触れていません。
+
+上記の実測用 DB は既存データを持たない別 cluster です。staging DB・本番 DB の初期化や再作成は行っていません。

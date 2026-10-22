@@ -141,4 +141,46 @@ test.describe('authenticated subscription sync preserves edits', () => {
     await page.reload();
     await expect(subscriptionCard(page, '応答が失われた作成')).toHaveCount(1);
   });
+
+  test('an older backend keeps queued edits through reload and resumes with the same create key', async ({ page }) => {
+    await createSubscription(api, { name: '配備前に保存済み', amountYen: 500, billingCycle: 'monthly' });
+    await signInWithDevAuth(page);
+    let olderBackend = true;
+    const createKeys: (string | undefined)[] = [];
+    const legacyMutations: string[] = [];
+    page.on('request', (request) => {
+      if (request.method() !== 'GET' && /\/api\/v1\/subscriptions(?:\/|$)/.test(new URL(request.url()).pathname)) {
+        legacyMutations.push(request.url());
+      }
+    });
+    await page.route('**/api/v1/sync/subscriptions', async (route) => {
+      if (route.request().method() !== 'POST') return route.continue();
+      createKeys.push(route.request().headers()['idempotency-key']);
+      if (olderBackend) {
+        return route.fulfill({ status: 404, contentType: 'application/json', body: JSON.stringify({ error: 'not_found', message: 'The requested endpoint does not exist' }) });
+      }
+      return route.continue();
+    });
+    await addSubscription(page, '旧backendへの未送信');
+    await expect.poll(() => createKeys.length).toBeGreaterThan(0);
+    const originalKey = createKeys[0];
+    expect(originalKey).toBeTruthy();
+    const card = subscriptionCard(page, '旧backendへの未送信');
+    await card.getByRole('button', { name: '編集' }).click();
+    await page.getByLabel('メモ').fill('旧backendの間の編集も保持');
+    await submitSubscriptionForm(page, '変更を保存');
+    await page.reload();
+    await expect(subscriptionCard(page, '配備前に保存済み')).toBeVisible();
+    await expect(subscriptionCard(page, '旧backendへの未送信').getByText('旧backendの間の編集も保持')).toBeVisible();
+    expect((await fetchSubscriptions(api)).map((item) => item.name)).toEqual(['配備前に保存済み']);
+    const queued = await page.evaluate(() => Object.values(JSON.parse(localStorage.getItem('authenticated_subscriptions_sync_v1') || '{}')) as { pendingOperations: { id: string; type: string }[] }[]);
+    expect(queued.flatMap((state) => state.pendingOperations).find((operation) => operation.type === 'create')?.id).toBe(originalKey);
+    expect(legacyMutations).toEqual([]);
+    olderBackend = false;
+    await expect.poll(async () => (await fetchSubscriptions(api)).find((item) => item.name === '旧backendへの未送信')?.note, { timeout: 45_000 }).toBe('旧backendの間の編集も保持');
+    expect(createKeys.every((key) => key === originalKey)).toBeTruthy();
+    expect(legacyMutations).toEqual([]);
+    await page.reload();
+    await expect(subscriptionCard(page, '旧backendへの未送信')).toHaveCount(1);
+  });
 });
