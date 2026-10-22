@@ -55,7 +55,7 @@ jobs:
         run: node -e "if (process.version !== 'v24.22.1') process.exit(1); console.log(process.version)"
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --no-audit --no-fund
 
       - name: Run lint
         run: npm run lint
@@ -101,7 +101,7 @@ jobs:
         run: node -e "if (process.version !== 'v24.22.1') process.exit(1); console.log(process.version)"
 
       - name: Install dependencies
-        run: npm ci
+        run: npm ci --no-audit --no-fund
 
       - name: Install Playwright browsers
         run: npx playwright install --with-deps chromium

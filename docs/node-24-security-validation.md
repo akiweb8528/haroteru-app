@@ -57,7 +57,7 @@ Docker 開発用と builder の実測は Node.js `v24.22.1` / sharp `0.35.5` / v
 
 DB の各状態は専用 PostgreSQL に対する psql の直接照会で確認。認証済み検証の console warning / error は 0 件。検証ページを閉じ、元の about:blank ページだけが残ることを確認した。今回起動したホスト frontend / backend は所有 PID とポートを確認して停止した。
 
-Dockerfile の npm ci は registry の audit endpoint 待ちをビルドから切り離すため `--no-audit --no-fund` とした。依存監査の結果は別途記録している。最終 flags で builder / runner / 開発用の全 image を再 build し、すべて exit 0。各 image 内の Node.js が `v24.22.1` であることを再確認した。最終 runner を再起動し、上記 HTTP 応答と WEBP 変換も再確認した。
+Dockerfile と CI の npm ci は registry の audit endpoint 待ちを依存導入から切り離すため `--no-audit --no-fund` とした。CI でも依存導入が 4 分以上続くことを観測したため、同じ方針へ揃えた。依存監査の結果は別途記録している。最終 flags で builder / runner / 開発用の全 image を再 build し、すべて exit 0。各 image 内の Node.js が `v24.22.1` であることを再確認した。最終 runner を再起動し、上記 HTTP 応答と WEBP 変換も再確認した。
 
 検証ログは当セッションの `/tmp/haroteru-node24-verification/`（`final-runtime-verification.json` と各 build / runtime log）。今回作成した runner / Dev Container / DinD volume / PostgreSQL と匿名 volume は削除し、検証用 DB のユーザー・データも残していない。既存の別作業のサーバー（3000 番など）には操作していない。
 
