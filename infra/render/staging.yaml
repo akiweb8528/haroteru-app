@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: haroteru-backend-staging
+    runtime: go
+    plan: free
+    rootDir: backend
+    branch: main
+    autoDeployTrigger: 'off'
+    buildCommand: go build -o bin/server ./cmd/server
+    startCommand: ./bin/server
+    healthCheckPath: /health/ready
+    envVars:
+      - key: ENVIRONMENT
+        value: staging
+      - key: DATABASE_URL
+        sync: false
+      - key: JWT_SECRET
+        generateValue: true
+      - key: GOOGLE_CLIENT_ID
+        sync: false
+      - key: GOOGLE_CLIENT_SECRET
+        sync: false
+      - key: PUBLIC_API_URL
+        sync: false
+      - key: DEV_AUTH_ENABLED
+        sync: false
+      - key: DEV_AUTH_CODE
+        sync: false
+      - key: FRONTEND_URL
+        sync: false

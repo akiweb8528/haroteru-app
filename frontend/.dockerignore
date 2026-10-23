@@ -1,0 +1,12 @@
+node_modules
+.next
+.env
+.env.*
+test-results
+playwright-report
+coverage
+*.tsbuildinfo
+public/sw.js
+public/sw.js.map
+public/workbox-*.js
+public/workbox-*.js.map

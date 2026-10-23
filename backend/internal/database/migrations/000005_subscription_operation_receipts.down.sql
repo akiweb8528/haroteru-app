@@ -1,0 +1,2 @@
+DROP TABLE subscription_operation_receipts;
+ALTER TABLE tracked_subscriptions DROP COLUMN create_operation_id;

@@ -1,0 +1,39 @@
+# Development overrides — hot reload and exposed ports
+services:
+  postgres:
+    ports:
+      - "5432:5432"
+
+  backend:
+    build:
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./backend:/app
+      - go_mod_cache:/go/pkg/mod
+      - go_build_cache:/root/.cache/go-build
+    environment:
+      ENVIRONMENT: development
+      AIR_WD: /app
+      DEV_AUTH_ENABLED: ${DEV_AUTH_ENABLED:-false}
+      DEV_AUTH_CODE: ${DEV_AUTH_CODE:-}
+      DEV_AUTH_EMAIL: ${DEV_AUTH_EMAIL:-dev-signin@haroteru.local}
+      DEV_AUTH_NAME: ${DEV_AUTH_NAME:-検証ユーザー}
+    command: air -c .air.toml
+
+  frontend:
+    build:
+      dockerfile: Dockerfile.dev
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+      - /app/.next
+    environment:
+      - NODE_ENV=development
+      - WATCHPACK_POLLING=true
+      - CHOKIDAR_USEPOLLING=true
+      - DEV_AUTH_ENABLED=${DEV_AUTH_ENABLED:-false}
+    command: npm run dev
+
+volumes:
+  go_mod_cache:
+  go_build_cache:

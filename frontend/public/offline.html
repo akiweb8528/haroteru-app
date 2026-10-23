@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>オフライン | サブスク払ろてる</title>
+    <style>
+      :root {
+        color-scheme: light dark;
+        font-family: Inter, "Hiragino Sans", "Yu Gothic", sans-serif;
+        background: #f9fafb;
+        color: #111827;
+      }
+
+      body {
+        margin: 0;
+        min-height: 100vh;
+        min-height: 100dvh;
+        display: grid;
+        place-items: center;
+        background:
+          radial-gradient(circle at top, rgba(249, 115, 22, 0.18), transparent 32%),
+          linear-gradient(180deg, #fff7ed 0%, #f9fafb 40%, #ffffff 100%);
+        padding: 24px;
+      }
+
+      .card {
+        width: min(100%, 480px);
+        border-radius: 24px;
+        background: rgba(255, 255, 255, 0.92);
+        border: 1px solid rgba(251, 146, 60, 0.24);
+        box-shadow: 0 20px 50px rgba(251, 146, 60, 0.12);
+        padding: 28px;
+      }
+
+      h1 {
+        margin: 0;
+        font-size: clamp(1.75rem, 4vw, 2.25rem);
+        line-height: 1.15;
+      }
+
+      p {
+        margin: 16px 0 0;
+        line-height: 1.7;
+        color: #4b5563;
+      }
+
+      a {
+        display: inline-flex;
+        margin-top: 20px;
+        padding: 12px 16px;
+        border-radius: 999px;
+        background: #ea580c;
+        color: white;
+        text-decoration: none;
+        font-weight: 700;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        :root {
+          background: #030712;
+          color: #f9fafb;
+        }
+
+        body {
+          background:
+            radial-gradient(circle at top, rgba(251, 146, 60, 0.2), transparent 30%),
+            linear-gradient(180deg, #111827 0%, #030712 70%);
+        }
+
+        .card {
+          background: rgba(17, 24, 39, 0.92);
+          border-color: rgba(251, 146, 60, 0.25);
+          box-shadow: none;
+        }
+
+        p {
+          color: #d1d5db;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main class="card">
+      <h1>いまはオフラインやで。</h1>
+      <p>前に開いた画面や保存済みの情報はそのまま見られることがあるけど、同期や更新は通信が戻ってからになるで。</p>
+      <a href="/subscriptions">ダッシュボードへ戻る</a>
+    </main>
+  </body>
+</html>
